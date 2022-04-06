@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.20)
+project(wchen_utils)
+set(CMAKE_CXX_STANDARD 99)
+set(GTEST_DIR ./third_party/googletest)
+add_subdirectory(${GTEST_DIR})
+include_directories(${GTEST_DIR}/googletest/include)
+include_directories(${GTEST_DIR}/googlemock/include)
+
+add_executable(main point_array.c wchen_point_array_testcase.cpp main.cpp)
+target_link_libraries(main gtest)
