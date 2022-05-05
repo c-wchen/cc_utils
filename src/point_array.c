@@ -1,24 +1,26 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "point_array.h"
+
 #define MAX_LEN_LIMIT 8000
 
-void* CreatePointArray(int size) {
+void *CreatePointArray(int size) {
     uint32_t maxColNum = MAX_LEN_LIMIT / sizeof(uint64_t *);
     uint32_t rowNum = (size + maxColNum - 1) / maxColNum;
-    uint64_t **rowPtr = (uint64_t **)malloc(rowNum * sizeof(uint64_t **));
+    uint64_t **rowPtr = (uint64_t **) malloc(rowNum * sizeof(uint64_t **));
     for (int32_t i = 0; i < rowNum; i++) {
         uint32_t colNum = (i == rowNum - 1) ? (size - maxColNum * i) : maxColNum;
-        rowPtr[i] = (uint64_t *) malloc(colNum *  sizeof(uint64_t *));
+        rowPtr[i] = (uint64_t *) malloc(colNum * sizeof(uint64_t *));
     }
-    return (void *)rowPtr;
+    return (void *) rowPtr;
 }
 
 void SetPointValue(void *rowPtr, uint32_t index, void *value) {
     uint32_t maxColNum = MAX_LEN_LIMIT / sizeof(uint64_t *);
-    ((uint64_t **)rowPtr)[index / maxColNum][index % maxColNum] = (uint64_t)value;
+    ((uint64_t **) rowPtr)[index / maxColNum][index % maxColNum] = (uint64_t) value;
 }
-void* GetPointValue(void *rowPtr, uint32_t index) {
+
+void *GetPointValue(void *rowPtr, uint32_t index) {
     uint32_t maxColNum = MAX_LEN_LIMIT / sizeof(uint64_t *);
-    return (void *)((uint64_t **)rowPtr)[index / maxColNum][index % maxColNum];
+    return (void *) ((uint64_t **) rowPtr)[index / maxColNum][index % maxColNum];
 }
