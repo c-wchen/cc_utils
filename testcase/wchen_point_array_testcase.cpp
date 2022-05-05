@@ -14,9 +14,9 @@ TEST(TestCase, TEST_POINT_ARRAY) {
     for (int32_t i = 0; i < 10; i++) {
         f1->data[i] = i;
     }
-    void *ptr = createPointArray(1500);
-    setPointValue(ptr, 1234, f1);
+    void *ptr = CreatePointArray(1500);
+    SetPointValue(ptr, 1234, f1);
 
-    FlexArray *f2 = (FlexArray *)getPointValue(ptr, 1234);
+    FlexArray *f2 = (FlexArray *)GetPointValue(ptr, 1234);
     printf("%d %d %d %d", f2->length, f2->data[0], f2->data[1], f2->data[2]);
 }

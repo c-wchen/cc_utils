@@ -4,9 +4,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void* createPointArray(int size);
-void setPointValue(void *rowPtr, uint32_t index, void *value);
-void* getPointValue(void *rowPtr, uint32_t index);
+void* CreatePointArray(int size);
+void SetPointValue(void *rowPtr, uint32_t index, void *value);
+void* GetPointValue(void *rowPtr, uint32_t index);
 
 #ifdef __cplusplus
 }
