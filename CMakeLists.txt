@@ -12,10 +12,11 @@ add_subdirectory(testcase)
 
 ##　gtest编译
 set(GOOGLETEST_VERSION 1.11.0)
+set(GTEST_SOURCE_DIR third_party/googletest)
 # 全局可见头文件
-include_directories(third_party/googletest-release-1.11.0/googletest/include)
-include_directories(third_party/googletest-release-1.11.0/googlemock/include)
-add_subdirectory(third_party/googletest-release-1.11.0/googletest)
+include_directories(${GTEST_SOURCE_DIR}/googletest/include)
+include_directories(${GTEST_SOURCE_DIR}/googlemock/include)
+add_subdirectory(${GTEST_SOURCE_DIR}/googletest)
 #add_subdirectory(third_party/googletest-release-1.11.0/googlemock)
 
 #定义需要暴露的头文件
