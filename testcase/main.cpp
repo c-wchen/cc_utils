@@ -2,7 +2,7 @@
 #include "gtest/gtest.h"
 using namespace std;
 
-TEST(TestCase, test2) {
+TEST(TEST_DEMO_SUIT, TEST_DEMO_CASE) {
     EXPECT_EQ(3, 2);
 }
 
