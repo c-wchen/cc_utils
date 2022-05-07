@@ -3,12 +3,8 @@
 //
 // Created by 忘尘 on 2022/4/7.
 //
-typedef struct {
-    int32_t length;
-    int32_t data[0];
-} FlexArray;
 
-TEST(TestCase, TEST_POINT_ARRAY) {
+TEST(TEST_POINT, TEST_POINT_ARRAY) {
     FlexArray *f1 = (FlexArray *)malloc(sizeof(FlexArray) + 10 * sizeof(int32_t));
     f1->length = 1000;
     for (int32_t i = 0; i < 10; i++) {
