@@ -10,9 +10,9 @@ TEST(TEST_POINT, TEST_POINT_ARRAY) {
     for (int32_t i = 0; i < 10; i++) {
         f1->data[i] = i;
     }
-    void *ptr = CreatePointArray(1500);
-    SetPointValue(ptr, 1234, f1);
+    void *ptr = create_point_array(1500);
+    set_point_value(ptr, 1234, f1);
 
-    FlexArray *f2 = (FlexArray *)GetPointValue(ptr, 1234);
+    FlexArray *f2 = (FlexArray *) get_point_value(ptr, 1234);
     printf("%d %d %d %d", f2->length, f2->data[0], f2->data[1], f2->data[2]);
 }
