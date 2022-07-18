@@ -3,8 +3,6 @@ project(wchen_cc_utils)
 set(CMAKE_CXX_STANDARD 14)
 #set (LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-
-
 ## 本模块项目
 include_directories(include)
 add_subdirectory(src)

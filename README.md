@@ -28,3 +28,17 @@ extern "C" {
 #endif
 #endif
 ```
+
+
+##　安装asan包和gcc
+```bash
+## 直接yum更新gcc
+sudo yum install centos-release-scl
+
+sudo yum install devtoolset-8-gcc*
+
+scl enable devtoolset-8 bash
+
+# 注意需要安装对应版本的asan包
+sudo yum install devtoolset-8-libasan-devel
+```
