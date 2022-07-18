@@ -29,8 +29,7 @@ extern "C" {
 #endif
 ```
 
-
-##　安装asan包和gcc
+## 安装asan包和gcc
 ```bash
 ## 直接yum更新gcc
 sudo yum install centos-release-scl
