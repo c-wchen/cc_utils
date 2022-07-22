@@ -15,4 +15,6 @@ TEST(TEST_POINT, TEST_POINT_ARRAY) {
 
     FlexArray *f2 = (FlexArray *) get_point_value(ptr, 1234);
     printf("%d %d %d %d", f2->length, f2->data[0], f2->data[1], f2->data[2]);
+    free(f1);
+    free_point_array(ptr, 1500);
 }

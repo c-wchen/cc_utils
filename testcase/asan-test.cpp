@@ -100,19 +100,19 @@ int test(int argc, char *argv[]) {
     return 0;
 }
 
-TEST(TEST_ASAN, test_asan) {
-    int argc = 2;
-    int len = 30;
-    char *argv[10];
-    for (int i = 0; i < argc; ++i) {
-        argv[i] = (char *)malloc(len);
-        memset(argv[i], 0, len);
-    }
-    strcpy(argv[0], "asan-test");
-    strcpy(argv[1], "-b");
-    test(argc, argv);
-    for (int i = 0; i < argc; ++i) {
-        free(argv[i]);
-        argv[i] = NULL;
-    }
-}
+//TEST(TEST_ASAN, test_asan) {
+//    int argc = 2;
+//    int len = 30;
+//    char *argv[10];
+//    for (int i = 0; i < argc; ++i) {
+//        argv[i] = (char *)malloc(len);
+//        memset(argv[i], 0, len);
+//    }
+//    strcpy(argv[0], "asan-test");
+//    strcpy(argv[1], "-b");
+//    test(argc, argv);
+//    for (int i = 0; i < argc; ++i) {
+//        free(argv[i]);
+//        argv[i] = NULL;
+//    }
+//}

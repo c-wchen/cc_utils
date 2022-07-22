@@ -4,4 +4,7 @@
 3. 测试工具集
 
 ## version 1.1
-1. 集成ASAN *
+1. 集成ASAN
+2. lcov覆盖率
+3. pclint
+4. cleancode
