@@ -6,7 +6,7 @@
 
 int str_to_int(const char *buf, int length) {
     if (strlen(buf) != length) {
-        printf("str length is mismatch (%d, %d)\n", strlen(buf), length);
+        printf("str length is mismatch (%ld, %d)\n", strlen(buf), length);
         return INT_MIN;
     }
     for (int i = 0; i < length; i++) {
@@ -16,9 +16,9 @@ int str_to_int(const char *buf, int length) {
         }
     }
     // pre check
-    int res = atoi(buf);
+    int res = strtol(buf, NULL, 10);
     int checkVal = res;
-    int remainder = 0;
+    int remainder;
     for (int i = length - 1; i >= 0; i--) {
         remainder = checkVal % 10;
         checkVal /= 10;
