@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 ## 本模块项目
 include_directories(include)
+include_directories(third_party/uthash/src)
 add_subdirectory(src)
 add_subdirectory(testcase)
 
@@ -19,3 +20,5 @@ add_subdirectory(${GTEST_SOURCE_DIR}/googletest)
 
 #定义需要暴露的头文件
 #target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fexec-charset=GBK")

@@ -19,7 +19,7 @@ void free_point_array(void *ptr, int size) {
     uint32_t maxColNum = MAX_LEN_LIMIT / sizeof(uint64_t *);
     uint32_t rowNum = (size + maxColNum - 1) / maxColNum;
     for (int32_t i = 0; i < rowNum; i++) {
-        free(((uint64_t **)ptr) + i);
+        free(((uint64_t **)ptr)[i]);
     }
     free(ptr);
 }
