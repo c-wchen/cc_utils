@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-
 void *malloc_plus(int size, const char *func, uint32_t lineNum) {
     if (size <= 0) {
         return NULL;
