@@ -235,8 +235,3 @@ TEST(TEST_UT, test_ut_stack) {
         STACK_POP(top, tmp);
     }
 }
-
-
-
-
-
