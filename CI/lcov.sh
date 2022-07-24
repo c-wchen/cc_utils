@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# lcov.sh使用
+# 进入项目目录，运行脚本sh build lcov.sh, 成功之后查看lcov文件生成html格式报表
+
 BASE_DIR=$(cd `dirname $0`;pwd)/../
 LCOV_RELEASE=https://github.com/linux-test-project/lcov/releases/download/v1.15/lcov-1.15-1.noarch.rpm
 LCOV_EXCLUDE="*/gtest/*  **/include/**"
@@ -14,7 +17,7 @@ function install_lcov() {
     fi
 }
 
-function gen_lcov() {
+function gen_lcov_report() {
     set -e
     lcov -c -d ./ -o result.info
     lcov -r result.info *.h -o result.info
@@ -29,7 +32,8 @@ function gen_lcov() {
 function main() {
     ## 安装lcov
     install_lcov
-    gen_lcov
+
+    gen_lcov_report
 }
 
 main

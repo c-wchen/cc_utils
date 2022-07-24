@@ -44,3 +44,5 @@ sudo yum install devtoolset-8-libasan-devel
 
 ## 安装glib2.0
 sudo yum install -y glib2-devel
+
+pkg-config --cflags --libs glib-2.0

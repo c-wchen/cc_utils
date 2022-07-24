@@ -100,6 +100,7 @@ int test(int argc, char *argv[]) {
     return 0;
 }
 
+// asan场景验证，注释防止影响程序运行。
 //TEST(TEST_ASAN, test_asan) {
 //    int argc = 2;
 //    int len = 30;
