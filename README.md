@@ -41,3 +41,6 @@ scl enable devtoolset-8 bash
 # 注意需要安装对应版本的asan包
 sudo yum install devtoolset-8-libasan-devel
 ```
+
+## 安装glib2.0
+sudo yum install -y glib2-devel
