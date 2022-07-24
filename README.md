@@ -1,20 +1,14 @@
-## 添加gtest子模块
-```git submodule add git@github.com:google/googletest.git third_party/googletest```
-
-### cmake编译gtest
-```cmake
-##　gtest编译
-set(GOOGLETEST_VERSION 1.11.0)
-set(GTEST_SOURCE_DIR third_party/googletest)
-# 全局可见头文件
-include_directories(${GTEST_SOURCE_DIR}/googletest/include)
-include_directories(${GTEST_SOURCE_DIR}/googlemock/include)
-add_subdirectory(${GTEST_SOURCE_DIR}/googletest)
-#add_subdirectory(third_party/googletest-release-1.11.0/googlemock)
+### 目录介绍
+```bash
+├─CI                 #　集成模块，项目运行和集成相关脚本
+├─doc
+├─include            # src 头文件
+├─src                # 案例源码
+├─testcase           # 测试用例
+└─third_party        # 第三方子模块
 ```
-
 ### 注意项
-如果是C语言和C++混合编译在头文件需要添加```__cplusplus```
+1.如果是C语言和C++混合编译在头文件需要添加```__cplusplus```
 ```c
 #ifndef __XXX__
 #define __XXX__
@@ -28,21 +22,15 @@ extern "C" {
 #endif
 #endif
 ```
-
-## 安装asan包和gcc
+2.libasan和gcc和配套发布的，所以版本需要一致
 ```bash
-## 直接yum更新gcc
-sudo yum install centos-release-scl
-
-sudo yum install devtoolset-8-gcc*
-
-scl enable devtoolset-8 bash
-
-# 注意需要安装对应版本的asan包
-sudo yum install devtoolset-8-libasan-devel
+[wchen@wchen ~]$ yum list | grep devtoolset-8-gcc*
+devtoolset-8-gcc.x86_64                    8.3.1-3.2.el7          @centos-sclo-rh
+devtoolset-8-gcc-c++.x86_64                8.3.1-3.2.el7          @centos-sclo-rh
+devtoolset-8-gcc-gdb-plugin.x86_64         8.3.1-3.2.el7          @centos-sclo-rh
+devtoolset-8-gcc-gfortran.x86_64           8.3.1-3.2.el7          @centos-sclo-rh
+devtoolset-8-gcc-plugin-devel.x86_64       8.3.1-3.2.el7          @centos-sclo-rh
+[wchen@wchen ~]$ yum list | grep devtoolset-8-libasan*
+devtoolset-8-libasan-devel.x86_64          8.3.1-3.2.el7          @centos-sclo-rh
+[wchen@wchen ~]$
 ```
-
-## 安装glib2.0
-sudo yum install -y glib2-devel
-
-pkg-config --cflags --libs glib-2.0

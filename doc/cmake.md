@@ -1,15 +1,12 @@
-
-###cmake使用
-
+## cmake
 1. add_execute
 2. target_link_library
 3. ...
 4. FetchContent
    https://github.com/taoweiji/cpp-cmake-example
 
-
-
-1. set
+## 变量
+1.set
 
 变量定义与使用
 
@@ -18,7 +15,7 @@
 set(PROJECT A1.c A2.c A3.c)
 message("${PROJECT}")
 ```
-cmake常用变量
+常用变量
 
 | 环境变量名                                                   | 描述                                                         | 重要性 |
 | :----------------------------------------------------------- | :----------------------------------------------------------- | ------ |
@@ -38,35 +35,30 @@ cmake 编译选项
 | CMAKE_C_FLAGS     | 设置 C 编译选项,也可以通过指令 ADD_DEFINITIONS()添加。  |
 | CMAKE_CXX_FLAGS   | 设置 C++编译选项,也可以通过指令 ADD_DEFINITIONS()添加。 |
 
-2. 常用指令
+## 常用指令
 
-1. ```add_definitions(-DFOO -DBAR ...)```
+1.```add_definitions(-DFOO -DBAR ...)```
 
 > 对应gcc -DFOO， 外部添加宏选项
 
-2. ```add_dependencies(<target> [<target-dependency>]...)```
+2.```add_dependencies(<target> [<target-dependency>]...)```
 
 > 确保target依赖全部构建完成
 
-3. ```aux_source_directory(<dir> <variable>)```
+3.```aux_source_directory(<dir> <variable>)```
 
 > 将目录下的所有源文件保存到变量中，方便编译时替换
 
-4. ```add_subdirectory(source_dir [binary_dir] [EXCLUDE_FROM_ALL])```
+4.```add_subdirectory(source_dir [binary_dir] [EXCLUDE_FROM_ALL])```
 
 > 添加子项目目录，子项目需要CMakeLists.txt才能编译
 
-5. ```include_directories([AFTER|BEFORE] [SYSTEM] dir1 [dir2 ...])```
+5.```include_directories([AFTER|BEFORE] [SYSTEM] dir1 [dir2 ...])```
 
 > 将给定目录添加到编译器用来搜索包含文件的目录中。相对路径被解释为相对于当前源目录
 
+## 参考
+[CMake教程之CMake从入门到应用](https://aiden-dong.gitee.io/2019/07/20/CMake%E6%95%99%E7%A8%8B%E4%B9%8BCMake%E4%BB%8E%E5%85%A5%E9%97%A8%E5%88%B0%E5%BA%94%E7%94%A8/
+)
 
-
-
-
-
-
-##　参考
-https://aiden-dong.gitee.io/2019/07/20/CMake%E6%95%99%E7%A8%8B%E4%B9%8BCMake%E4%BB%8E%E5%85%A5%E9%97%A8%E5%88%B0%E5%BA%94%E7%94%A8/
-
-[MAKE安装](https://blog.csdn.net/Nicholas_Liu2017/article/details/78323391)
+[make安装和编译代码](https://blog.csdn.net/Nicholas_Liu2017/article/details/78323391)
