@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "malloc_plus.h"
 
 void *malloc_plus(int size, const char *func, uint32_t lineNum) {
     if (size <= 0) {
@@ -16,13 +17,10 @@ void *malloc_plus(int size, const char *func, uint32_t lineNum) {
     return ptr;
 }
 
-#define MALLOC_PLUS(size) malloc_plus(size, __FUNCTION__, __LINE__)
-
-void free_plus(void **ptr) {
+void free_plus(void **ptr, const char *func, uint32_t lineNum) {
     if (*ptr != NULL) {
         free(*ptr);
     }
+    printf("DBG[%s:%u] free successful\n", func, lineNum);
     *ptr = NULL;
 }
-
-#define FREE_PLUS(ptr) free_plus(&(ptr))

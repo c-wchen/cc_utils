@@ -6,5 +6,8 @@
 ## version 1.1
 1. 集成ASAN
 2. lcov覆盖率
-3. pclint
+
+## version 1.2
+1. mockcpp桩测试
+2. pclint
 4. cleancode
