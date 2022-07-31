@@ -4,3 +4,6 @@
 [submodule "third_party/uthash"]
 	path = third_party/uthash
 	url = https://github.com/troydhanson/uthash.git
+[submodule "third_party/mockcpp"]
+	path = third_party/mockcpp
+	url = https://github.com/c-wchen/mockcpp.git
