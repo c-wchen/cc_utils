@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 int str_to_int(const char *buf, int length);
-int float_to_str(float val, int preserve, char *output, int outputSize);
+int double_to_str(double val, int preserve, char *output, int outputSize);
 #ifdef __cplusplus
 }
 #endif

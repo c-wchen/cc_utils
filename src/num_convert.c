@@ -37,7 +37,7 @@ int str_to_int(const char *buf, int length) {
  * @param outputSize   输出的最大值
  * @return
  */
-int float_to_str(float val, int preserve, char *output, int outputSize) {
+int double_to_str(double val, int preserve, char *output, int outputSize) {
     if (preserve > 7 || preserve <= 0) {
         printf("preserve is err num\n");
     }
