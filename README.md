@@ -7,6 +7,12 @@
 ├─testcase           # 测试用例
 └─third_party        # 第三方子模块
 ```
+
+### 运行
+```bash
+mkdir build; cd build
+cmake .. -DENABLE_COVERAGE=ON
+```
 ### 注意项
 1.如果是C语言和C++混合编译在头文件需要添加```__cplusplus```
 ```c

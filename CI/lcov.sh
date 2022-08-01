@@ -26,7 +26,7 @@ function gen_lcov_report() {
         mkdir lcov
     fi
     lcov -r result.info ${LCOV_EXCLUDE}  -o result.info
-    genhtml -o lcov result.info
+    genhtml -o build/lcov result.info
 }
 
 function main() {

@@ -1,4 +1,5 @@
 *.zip
 cmake-*/
+build/*
 .idea/
 *.iml
