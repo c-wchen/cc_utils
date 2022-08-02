@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "num_convert.h"
 #include "malloc_plus.h"
+#include "check_param.h"
 #include <limits.h>
 
 TEST(TEST_UTILS, test_str_to_int) {
@@ -26,7 +27,7 @@ TEST(TEST_UTILS, test_float_to_str) {
             {91.1496975540085,   "91.15",     2},
             {2.763879751523659,  "2.8",       1},
             {0.6021928597465853, "0.6",       1},
-            {961.6796446580618,  "961.680",    3},
+            {961.6796446580618,  "961.680",   3},
             {8.719778071241969,  "8.72",      2},
             {3973.3154381839877, "3973.3154", 4},
             {3.8832864851559945, "3.9",       1},
@@ -63,4 +64,11 @@ TEST(TEST_UTILS, test_malloc_plus) {
         printf("index %d value %d\n", i, *(a + i));
     }
     FREE_PLUS(a);
+}
+
+TEST(TEST_UTILS, test_chec_param) {
+    uint64_t a = 0;
+    uint64_t b = 90;
+    uint64_t c = 0;
+    EXPECT_EQ(CHECK_ADDR(PARAM_THREE, a, b, c), true);
 }
