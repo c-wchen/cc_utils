@@ -12,6 +12,8 @@
 ```bash
 mkdir build; cd build
 cmake .. -DENABLE_COVERAGE=ON
+##使用Ninja
+cmake .. -DENABLE_COVERAGE=ON -G Ninja
 ```
 ### 注意项
 1.如果是C语言和C++混合编译在头文件需要添加```__cplusplus```
