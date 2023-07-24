@@ -1,4 +1,5 @@
 #inlcude "stub.h"
+#include "gtest/gtest.h"
 
 static void
 test_stub_fn(void) {
@@ -15,7 +16,7 @@ test_void_fn() {
 
 }
 
-int main() {
+TEST(TEST_STUB, test_custom_stub)  {
   stub_s *m;
   m = stub_init(STUB_LEN);
 
