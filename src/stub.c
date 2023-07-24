@@ -29,7 +29,7 @@ mprotect_recovery(void *fn) {
 
 stub_s *
 stub_init(size_t stub_len) {
-  stub_s *s = calloc(1, STIB_LEN + stub_len);
+  stub_s *s = calloc(1, STUB_LEN + stub_len);
   m->len = stub_len;
   m->stub = (char *) (m + sizeof(stub_s));
   return m;
