@@ -1,5 +1,6 @@
-#inlcude "stub.h"
+#include "stub.h"
 #include "gtest/gtest.h"
+#include <stdint.h>
 
 static void
 test_stub_fn(void) {
@@ -20,13 +21,10 @@ TEST(TEST_STUB, test_custom_stub)  {
   stub_s *m;
   m = stub_init(STUB_LEN);
 
-  ret = stub_set(m, test_fn, test_stub_fn);
-  if (ret) {
-    return -1;
-  }
+  int ret = stub_set(m, (void *)test_fn, (void *)test_stub_fn);
+  EXPECT_EQ(ret, 0);
   test_fn();
   stub_reset(m);
   test_fn();
   stub_finalize(m);
-  return 0;  
 }

@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#inlcude <sys/mman.h>
+#include <sys/mman.h>
+#include "stub.h"
 #define MPROTECT_RWX  (PROT_READ | PROT_WRITE | PROT_EXEC)
 #define MPROTECT_RX   (PROT_READ | PROT_EXEC)
 #define PAGE_SIZE (1 << 12)
@@ -29,7 +31,7 @@ mprotect_recovery(void *fn) {
 
 stub_s *
 stub_init(size_t stub_len) {
-  stub_s *s = calloc(1, STUB_LEN + stub_len);
+  stub_s *m = calloc(1, STUB_LEN + stub_len);
   m->len = stub_len;
   m->stub = (char *) (m + sizeof(stub_s));
   return m;
@@ -47,7 +49,7 @@ int stub_set(stub_s *m, void *fn, void *stub_fn) {
   }
   m->fn = fn;
   jmpq_op_len = m->len;
-  memcpy(m->stub, fn. jmpq_op_len);
+  memcpy(m->stub, fn, jmpq_op_len);
   *((uint8_t *)fn) = STUB_JMPQ;
   opaddr = fn + STUB_JMPQ_LEN;
   *((uint32_t *)opaddr) = stub_fn - fn - STUB_LEN;
