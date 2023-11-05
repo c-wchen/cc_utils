@@ -3,3 +3,7 @@ cmake-*/
 build/*
 *.iml
 .idea/
+*/build
+*.info
+lcov
+.vscode/
