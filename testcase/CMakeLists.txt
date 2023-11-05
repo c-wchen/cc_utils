@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.17)
 project(wtest)
 set(CMAKE_VERBOSE_MAKEFILEON ON)
+
+option(ENABLE_ASAN "ENABLE_ASAN: " ON)
+option(ENABLE_COVERAGE "ENABLE_COVERAGE: " ON)
+option(ENABLE_DEBUG "ENABLE_COVERAGE: " ON)
+
 # asan
 set(CMAKE_CXX_FLAGS "-g -std=c++11 -fno-omit-frame-pointer")
 if (ENABLE_ASAN)
@@ -50,4 +55,5 @@ endif()
 
 add_subdirectory(${TOP_DIR} wsrc_${BIN_DIRECTORY_DIR})
 
-target_link_libraries(${PROJECT_NAME} wsrc_static gtest mockcpp pthread)
+target_link_libraries(${PROJECT_NAME} wsrc_static gtest mockcpp pthread asan dl)
+target_compile_options(${PROJECT_NAME} PRIVATE -g -O1)

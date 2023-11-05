@@ -10,3 +10,7 @@ if (ENABLE_COVERAGE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
 endif ()
+
+if (ENABLE_DEBUG)
+    target_compile_options(${PROJECT_NAME} PRIVATE -g -O1)
+endif()

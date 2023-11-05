@@ -35,9 +35,9 @@ mprotect_recovery(void *fn)
 mock_s *
 mock_init(size_t mock_len)
 {
-    mock_s *m = calloc(1, MOCK_LEN + mock_len);
+    mock_s *m = calloc(1, sizeof(mock_s) + mock_len);
     m->len = mock_len;
-    m->mock = (char *)(m + sizeof(mock_s));
+    m->mock = (char *)((char *)m + sizeof(mock_s));
     return m;
 }
 
