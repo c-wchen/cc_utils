@@ -134,7 +134,7 @@ TEST(TEST_UT, test_ut_singly_linked) {
 
 
 TEST(TEST_UT, test_ut_double_linked) {
-    student s1, s2, s3, s4, *tmp;
+    student s1, s2, s3, s4, *tmp, *shead = NULL;
     s1.user_id = 20;
     s1.user_name = "s1";
     s2.user_id = 19;
@@ -143,17 +143,16 @@ TEST(TEST_UT, test_ut_double_linked) {
     s3.user_name = "s3";
     s4.user_id = 10;
     s4.user_name = "s4";
-
-    DL_APPEND(head, &s1);
-    DL_APPEND(head, &s2);
-    DL_APPEND(head, &s3);
-    DL_APPEND(head, &s4);
-    DL_FOREACH(head, tmp) {
+    DL_APPEND(shead, &s1);
+    DL_APPEND(shead, &s2);
+    DL_APPEND(shead, &s3);
+    DL_APPEND(shead, &s4);
+    DL_FOREACH(shead, tmp) {
         printf("user id: %ld, user name: %s\n", tmp->user_id, tmp->user_name);
     }
-    DL_SORT(head, cmp_from_stu);
+    DL_SORT(shead, cmp_from_stu);
     printf("=========================\n");
-    DL_FOREACH(head, tmp) {
+    DL_FOREACH(shead, tmp) {
         printf("user id: %ld, user name: %s\n", tmp->user_id, tmp->user_name);
     }
 }

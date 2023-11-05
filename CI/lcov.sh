@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # lcov.sh使用
-# 进入项目目录，运行脚本sh build lcov.sh, 成功之后查看lcov文件生成html格式报表
+# 进入项目目录，运行脚本sh lcov.sh, 成功之后查看lcov文件生成html格式报表
 
 BASE_DIR=$(cd `dirname $0`;pwd)/../
 LCOV_RELEASE=https://github.com/linux-test-project/lcov/releases/download/v1.15/lcov-1.15-1.noarch.rpm

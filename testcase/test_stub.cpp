@@ -1,9 +1,9 @@
-#include "stub.h"
+#include "mock.h"
 #include "gtest/gtest.h"
 #include <stdint.h>
 
 static void
-test_stub_fn(void) {
+test_mock_fn(void) {
   printf("%s\n", __func__);
 }
 
@@ -17,14 +17,14 @@ test_void_fn() {
 
 }
 
-TEST(TEST_STUB, test_custom_stub)  {
-  stub_s *m;
-  m = stub_init(STUB_LEN);
+TEST(TEST_STUB, test_custom_mock)  {
+  mock_s *m;
+  m = mock_init(MOCK_LEN);
 
-  int ret = stub_set(m, (void *)test_fn, (void *)test_stub_fn);
+  int ret = mock_set(m, (void *)test_fn, (void *)test_mock_fn);
   EXPECT_EQ(ret, 0);
   test_fn();
-  stub_reset(m);
+  mock_reset(m);
   test_fn();
-  stub_finalize(m);
+  mock_finalize(m);
 }

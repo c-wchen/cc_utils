@@ -28,4 +28,5 @@ bool CheckParamFromAddr(const char *func, uint32_t lineNum, int32_t num, ...) {
     buf[MAX_BUF_SIZE - 1] = '\0';
     printf("%s\n", buf);
     va_end(valist);
+    return true;
 }

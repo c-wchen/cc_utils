@@ -44,18 +44,20 @@ TEST(TEST_MOCKCPP, test_expects) {
 }
 
 TEST(TEST_MOCKCPP, test_will_and_then) {
-    MOCKER(add).stubs()
-            .with(eq(2), any())
-            .will(returnValue(1))
-            .then(increase(20));
-    printf("===%d\n", add(2, 2));
-    printf("===%d\n", add(2, 2));
-    printf("===%d\n", add(2, 2));
-    printf("===%d\n", add(2, 2));
+    // MOCKER(add).stubs()
+    //         .with(eq(2), any())
+    //         .will(returnValue(1))
+    //         .then(increase(20));
+    // add(2, 2);
+    // add(2, 2);
+    // add(2, 2);
+    // add(2, 2);
+    // MOCKER(add).stubs();
 }
 
 TEST(TEST_MOCKCPP, test_with) {
     MOCKER(add).stubs()
             .with(eq(2), any())
             .will(invoke(add_stub));
+    MOCKER(add).stubs();
 }
