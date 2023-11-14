@@ -9,7 +9,8 @@
 
 #define MAX_BUF_SIZE 256
 
-bool CheckParamFromAddr(const char *func, uint32_t lineNum, int32_t num, ...) {
+bool CheckParamFromAddr(const char *func, uint32_t lineNum, int32_t num, ...)
+{
     va_list valist;
     va_start(valist, num);
     char buf[MAX_BUF_SIZE] = {'\0'};

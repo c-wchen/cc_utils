@@ -4,7 +4,8 @@
 // Created by 忘尘 on 2022/4/7.
 //
 
-TEST(TEST_POINT, test_point_array) {
+TEST(TEST_POINT, test_point_array)
+{
     FlexArray *f1 = (FlexArray *)malloc(sizeof(FlexArray) + 10 * sizeof(int32_t));
     f1->length = 1000;
     for (int32_t i = 0; i < 10; i++) {

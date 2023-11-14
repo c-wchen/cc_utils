@@ -11,29 +11,34 @@
 
 int ga[10] = {1};
 
-int global_buffer_overflow() {
+int global_buffer_overflow()
+{
     return ga[10];
 }
 
-void heap_leak() {
+void heap_leak()
+{
     int *k = (int *) malloc(10 * sizeof(int));
     return;
 }
 
-int heap_use_after_free() {
+int heap_use_after_free()
+{
     int *u = (int *) malloc(10 * sizeof(int));
     u[9] = 10;
     free(u);
     return u[9];
 }
 
-int heap_buffer_overflow() {
+int heap_buffer_overflow()
+{
     int *h = (int *) malloc(10 * sizeof(int));
     h[0] = 10;
     return h[10];
 }
 
-int stack_buffer_overflow() {
+int stack_buffer_overflow()
+{
     int s[10];
     s[0] = 10;
     return s[10];
@@ -41,14 +46,16 @@ int stack_buffer_overflow() {
 
 int *gp;
 
-void stack_use_after_return() {
+void stack_use_after_return()
+{
     int r[10];
     r[0] = 10;
     gp = &r[0];
     return;
 }
 
-void stack_use_after_scope() {
+void stack_use_after_scope()
+{
     {
         int c = 0;
         gp = &c;
@@ -57,44 +64,45 @@ void stack_use_after_scope() {
     return;
 }
 
-int test(int argc, char *argv[]) {
+int test(int argc, char *argv[])
+{
     int opt = 0;
     while ((opt = getopt(argc, argv, "hbfloprs")) != -1) {
         switch (opt) {
-            case 'h':
-                printf("Test AddressSanitier\n"
-                       "usage: asan-test [-bfloprs]\n\n"
-                       "-b   heap buffer overflow\n"
-                       "-f   heap use after free\n"
-                       "-l   heap memory leak\n"
-                       "-o   global buffer overflow\n"
-                       "-p   stack use after scope\n"
-                       "-r   stack use after return\n"
-                       "-s   stack buffer overflow\n");
-                break;
-            case 'b':
-                stack_buffer_overflow();
-                break;
-            case 'f':
-                heap_use_after_free();
-                break;
-            case 'l':
-                heap_leak();
-                break;
-            case 'o':
-                global_buffer_overflow();
-                break;
-            case 'p':
-                stack_use_after_scope();
-                break;
-            case 'r':
-                stack_use_after_return();
-                break;
-            case 's':
-                stack_buffer_overflow();
-                break;
-            default:
-                break;
+        case 'h':
+            printf("Test AddressSanitier\n"
+                   "usage: asan-test [-bfloprs]\n\n"
+                   "-b   heap buffer overflow\n"
+                   "-f   heap use after free\n"
+                   "-l   heap memory leak\n"
+                   "-o   global buffer overflow\n"
+                   "-p   stack use after scope\n"
+                   "-r   stack use after return\n"
+                   "-s   stack buffer overflow\n");
+            break;
+        case 'b':
+            stack_buffer_overflow();
+            break;
+        case 'f':
+            heap_use_after_free();
+            break;
+        case 'l':
+            heap_leak();
+            break;
+        case 'o':
+            global_buffer_overflow();
+            break;
+        case 'p':
+            stack_use_after_scope();
+            break;
+        case 'r':
+            stack_use_after_return();
+            break;
+        case 's':
+            stack_buffer_overflow();
+            break;
+        default:
+            break;
         }
     }
     return 0;

@@ -4,7 +4,8 @@
 #include "glib.h"
 #include "gtest/gtest.h"
 
-TEST(TEST_GLIB, test_glib_list) {
+TEST(TEST_GLIB, test_glib_list)
+{
     GList* list=NULL;
     guint a = 2;
     list=g_list_append(list,(gpointer)"Hello world!");

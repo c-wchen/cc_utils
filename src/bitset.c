@@ -17,7 +17,8 @@ typedef struct {
     int32_t len;
 } Bits;
 
-Bits *BitAlloc(int32_t len) {
+Bits *BitAlloc(int32_t len)
+{
     Bits *bits = (Bits *) malloc(sizeof(Bits));
     if (bits == NULL) {
         return NULL;
@@ -32,7 +33,8 @@ Bits *BitAlloc(int32_t len) {
     return bits;
 }
 
-void BitFree(Bits *bits) {
+void BitFree(Bits *bits)
+{
     if (bits != NULL) {
         if (bits->data) {
             free(bits->data);
@@ -48,7 +50,8 @@ void BitFree(Bits *bits) {
  * @param value : 0 | 1
  * @return
  */
-int32_t BitSet(Bits *bits, int32_t offset, uint8_t value) {
+int32_t BitSet(Bits *bits, int32_t offset, uint8_t value)
+{
     if (value != 0 && value != 1) {
         return BIT_FAIL;
     }
@@ -63,14 +66,16 @@ int32_t BitSet(Bits *bits, int32_t offset, uint8_t value) {
     return BIT_SUCCESS;
 }
 
-int32_t BitGet(Bits *bits, int32_t offset) {
+int32_t BitGet(Bits *bits, int32_t offset)
+{
     if (offset >= bits->len) {
         return BIT_FAIL;
     }
     return (uint32_t)((bits->data[offset / 8] & (0x01 << (offset % 8))) > 0) ? 1 : 0;
 }
 
-int32_t BitPrint(Bits *bits) {
+int32_t BitPrint(Bits *bits)
+{
     int32_t i;
 #define MAX_SEP_LEN 16
     for (i = 0; i < bits->len; i++) {

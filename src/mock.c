@@ -48,8 +48,7 @@ int mock_set(mock_s *m, void *fn, void *mock_fn)
     size_t jmpq_op_len;
 
     ret = mprotect_write(fn);
-    if (ret)
-    {
+    if (ret) {
         printf("%s mprotect_write error!\n", __func__);
         return ret;
     }
@@ -61,8 +60,7 @@ int mock_set(mock_s *m, void *fn, void *mock_fn)
     *((uint32_t *)opaddr) = mock_fn - fn - MOCK_LEN;
     ret = mprotect_recovery(fn);
 
-    if (ret)
-    {
+    if (ret) {
         printf("%s mprotect_recovery error!\n", __func__);
         return ret;
     }
@@ -75,15 +73,13 @@ int mock_reset(mock_s *m)
     void *fn;
     fn = m->fn;
     ret = mprotect_write(fn);
-    if (ret)
-    {
+    if (ret) {
         printf("%s mprotect_write error!\n", __func__);
         return ret;
     }
     memcpy(fn, m->mock, m->len);
     ret = mprotect_recovery(fn);
-    if (ret)
-    {
+    if (ret) {
         printf("%s mprotect_recovery error!\n", __func__);
         return ret;
     }

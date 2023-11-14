@@ -4,17 +4,20 @@
 #include "gtest/gtest.h"
 #include "mockcpp/mockcpp.hpp"
 
-int add(int a, int b) {
+int add(int a, int b)
+{
     printf("func add\n");
     return a + b;
 }
 
-int add_stub(int a, int b) {
+int add_stub(int a, int b)
+{
     printf("func addStub\n");
     return a + b;
 }
 
-TEST(TEST_MOCKCPP, test_add_stub) {
+TEST(TEST_MOCKCPP, test_add_stub)
+{
     MOCKER(add).stubs().will(invoke(add_stub));
     add(3, 2);
     MOCKER(add).stubs();
@@ -35,7 +38,8 @@ MOCKER(function) / MOCK_METHOD(mocker, method)
     [.id("some-mocker-id")]
 */
 
-TEST(TEST_MOCKCPP, test_expects) {
+TEST(TEST_MOCKCPP, test_expects)
+{
     MOCKER(add).expects(atMost(2)).will(invoke(add_stub));
     add(5, 4);
     add(6, 5);
@@ -43,7 +47,8 @@ TEST(TEST_MOCKCPP, test_expects) {
     MOCKER(add).stubs();
 }
 
-TEST(TEST_MOCKCPP, test_will_and_then) {
+TEST(TEST_MOCKCPP, test_will_and_then)
+{
     // MOCKER(add).stubs()
     //         .with(eq(2), any())
     //         .will(returnValue(1))
@@ -55,9 +60,10 @@ TEST(TEST_MOCKCPP, test_will_and_then) {
     // MOCKER(add).stubs();
 }
 
-TEST(TEST_MOCKCPP, test_with) {
+TEST(TEST_MOCKCPP, test_with)
+{
     MOCKER(add).stubs()
-            .with(eq(2), any())
-            .will(invoke(add_stub));
+    .with(eq(2), any())
+    .will(invoke(add_stub));
     MOCKER(add).stubs();
 }
