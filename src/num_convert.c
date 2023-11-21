@@ -4,7 +4,8 @@
 #include <limits.h>
 #include "num_convert.h"
 
-int str_to_int(const char *buf, int length) {
+int str_to_int(const char *buf, int length)
+{
     if (strlen(buf) != length) {
         printf("str length is mismatch (%ld, %d)\n", strlen(buf), length);
         return INT_MIN;
@@ -37,7 +38,8 @@ int str_to_int(const char *buf, int length) {
  * @param outputSize   输出的最大值
  * @return
  */
-int double_to_str(double val, int preserve, char *output, int outputSize) {
+int double_to_str(double val, int preserve, char *output, int outputSize)
+{
     if (preserve > 7 || preserve <= 0) {
         printf("preserve is err num\n");
     }
@@ -46,7 +48,7 @@ int double_to_str(double val, int preserve, char *output, int outputSize) {
     for (int i = 0; i < preserve; ++i) {
         preserve_val *= 10;
     }
-    long_val = (long) (val * preserve_val);
+    long_val = (long)(val * preserve_val);
     if (val * preserve_val - long_val > 0.5) {
         long_val++;
     }

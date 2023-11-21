@@ -7,7 +7,8 @@
 #include <string.h>
 #include "malloc_plus.h"
 
-void *malloc_plus(int size, const char *func, uint32_t lineNum) {
+void *malloc_plus(int size, const char *func, uint32_t lineNum)
+{
     if (size <= 0) {
         return NULL;
     }
@@ -17,7 +18,8 @@ void *malloc_plus(int size, const char *func, uint32_t lineNum) {
     return ptr;
 }
 
-void free_plus(void **ptr, const char *func, uint32_t lineNum) {
+void free_plus(void **ptr, const char *func, uint32_t lineNum)
+{
     if (*ptr != NULL) {
         free(*ptr);
     }

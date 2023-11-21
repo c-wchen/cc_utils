@@ -20,13 +20,15 @@ typedef struct {
 
 user *g_users = NULL;
 
-user *find_user(int64_t key) {
+user *find_user(int64_t key)
+{
     user *u1 = NULL;
     HASH_FIND_INT(g_users, &key, u1);
     return u1;
 }
 
-void add_user(user *u1) {
+void add_user(user *u1)
+{
     user *u2 = NULL;
     HASH_FIND_INT(g_users, &(u1->id), u2);
     if (u2 != NULL) {
@@ -36,7 +38,8 @@ void add_user(user *u1) {
     }
 }
 
-void delete_user(int64_t key) {
+void delete_user(int64_t key)
+{
     user *u1 = NULL;
     HASH_FIND_INT(g_users, &key, u1);
     if (u1 != NULL) {
@@ -45,7 +48,8 @@ void delete_user(int64_t key) {
     }
 }
 
-void delete_all() {
+void delete_all()
+{
     user *current_user, *tmp;
     HASH_ITER(hh, g_users, current_user, tmp) {
         HASH_DEL(g_users, current_user);
@@ -53,14 +57,16 @@ void delete_all() {
     }
 }
 
-void print_all() {
+void print_all()
+{
     user *current_user, *tmp;
     HASH_ITER(hh, g_users, current_user, tmp) {
         printf("id: %lld, data: %s\n", current_user->id, current_user->data);
     }
 }
 
-void clear_all() {
+void clear_all()
+{
     user *current_user, *tmp;
     HASH_ITER(hh, g_users, current_user, tmp) {
         HASH_DEL(g_users, current_user);
@@ -68,7 +74,8 @@ void clear_all() {
     }
 }
 
-TEST(TEST_UT, test_ut_hash) {
+TEST(TEST_UT, test_ut_hash)
+{
     user *u1 = (user *) malloc(sizeof(user));
     user *u2 = (user *) malloc(sizeof(user));
     u1->id = (int64_t) u1;
@@ -97,11 +104,13 @@ typedef struct student {
 
 student *head = NULL;
 
-int32_t cmp_from_stu(const void *s1, const void *s2) {
+int32_t cmp_from_stu(const void *s1, const void *s2)
+{
     return ((student *) s1)->user_id - ((student *) s2)->user_id;
 }
 
-TEST(TEST_UT, test_ut_singly_linked) {
+TEST(TEST_UT, test_ut_singly_linked)
+{
     student s1, s2, s3, s4, s5, *tmp, tmp2;
     s1.user_id = 20;
     s1.user_name = "s1";
@@ -133,7 +142,8 @@ TEST(TEST_UT, test_ut_singly_linked) {
 }
 
 
-TEST(TEST_UT, test_ut_double_linked) {
+TEST(TEST_UT, test_ut_double_linked)
+{
     student s1, s2, s3, s4, *tmp, *shead = NULL;
     s1.user_id = 20;
     s1.user_name = "s1";
@@ -157,7 +167,8 @@ TEST(TEST_UT, test_ut_double_linked) {
     }
 }
 // ---------------------------ut array-------------------------------------- //
-TEST(TEST_UT, test_ut_array) {
+TEST(TEST_UT, test_ut_array)
+{
     UT_array *num_arr;
     int *p;
     utarray_new(num_arr, &ut_int_icd);
@@ -165,9 +176,9 @@ TEST(TEST_UT, test_ut_array) {
         utarray_push_back(num_arr, &i);
     }
     for (
-            p = (int *) utarray_front(num_arr);
-            p != NULL;
-            p = (int *) utarray_next(num_arr, p)) {
+        p = (int *) utarray_front(num_arr);
+        p != NULL;
+        p = (int *) utarray_next(num_arr, p)) {
         printf("%d\n", *p);
     }
     utarray_free(num_arr);
@@ -181,7 +192,8 @@ typedef struct {
 // TODO: 深复制
 UT_icd my_icd = {sizeof(arr_item), NULL, NULL, NULL};
 
-TEST(TEST_UT, test_ut_array_from_arr_item) {
+TEST(TEST_UT, test_ut_array_from_arr_item)
+{
     UT_array *num_arr;
     arr_item p;
     arr_item *tmp;
@@ -193,9 +205,9 @@ TEST(TEST_UT, test_ut_array_from_arr_item) {
     }
 
     for (
-            tmp = (arr_item *) utarray_front(num_arr);
-            tmp != NULL;
-            tmp = (arr_item *) utarray_next(num_arr, tmp)) {
+        tmp = (arr_item *) utarray_front(num_arr);
+        tmp != NULL;
+        tmp = (arr_item *) utarray_next(num_arr, tmp)) {
         printf("%d %d\n", tmp->a, tmp->b);
     }
 
@@ -203,7 +215,8 @@ TEST(TEST_UT, test_ut_array_from_arr_item) {
 }
 
 // ---------------------------ut string-------------------------------------- //
-TEST(TEST_UT, test_ut_string) {
+TEST(TEST_UT, test_ut_string)
+{
     UT_string *str;
     utstring_new(str);
     utstring_printf(str, "hello world;");
@@ -213,7 +226,8 @@ TEST(TEST_UT, test_ut_string) {
 }
 
 // ---------------------------ut stack-------------------------------------- //
-TEST(TEST_UT, test_ut_stack) {
+TEST(TEST_UT, test_ut_stack)
+{
     student *top = NULL;
     student s1, s2, s3, s4, *tmp;
     s1.user_id = 20;

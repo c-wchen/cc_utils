@@ -6,31 +6,38 @@
 
 using namespace std;
 
-class MyTestSuit : public testing::Test {
+class MyTestSuit : public testing::Test
+{
 protected:
-    static void TearDownTestSuite() {
+    static void TearDownTestSuite()
+    {
         cout << "test suit tear down" << endl;
     }
 
-    static void SetUpTestSuite() {
+    static void SetUpTestSuite()
+    {
         cout << "test suit set up" << endl;
     }
 
 public:
-    virtual void SetUp() {
+    virtual void SetUp()
+    {
         cout << "single testcase set up" << endl;
     }
 
-    virtual void TearDown() {
+    virtual void TearDown()
+    {
         cout << "single testcase tear down" << endl;
     }
 };
 
-TEST_F(MyTestSuit, test_my_test_suit) {
+TEST_F(MyTestSuit, test_my_test_suit)
+{
     cout << "test impl content" << endl;
 }
 
-TEST_F(MyTestSuit, test_gtest_expect_mcro) {
+TEST_F(MyTestSuit, test_gtest_expect_mcro)
+{
     int a = 12;
     int b = 15;
     EXPECT_EQ(a, 12);
@@ -47,7 +54,8 @@ TEST_F(MyTestSuit, test_gtest_expect_mcro) {
     EXPECT_DOUBLE_EQ(1.2, 1.2);
 }
 
-TEST_F(MyTestSuit, test_gtest_assert_mcro) {
+TEST_F(MyTestSuit, test_gtest_assert_mcro)
+{
     int a = 12;
     int b = 15;
     ASSERT_EQ(a, 12);
@@ -62,15 +70,18 @@ TEST_F(MyTestSuit, test_gtest_assert_mcro) {
     ASSERT_STRCASENE("A", "B");
 }
 
-class MyParamTestSuit : public ::testing::TestWithParam<int> {
+class MyParamTestSuit : public ::testing::TestWithParam<int>
+{
 
 };
 
-TEST_P(MyParamTestSuit, test_param_input1) {
+TEST_P(MyParamTestSuit, test_param_input1)
+{
     cout << "test param input 1: " << GetParam() << endl;
 }
 
-TEST_P(MyParamTestSuit, test_param_input2) {
+TEST_P(MyParamTestSuit, test_param_input2)
+{
     cout << "test param input 2: " << GetParam() << endl;
 }
 
