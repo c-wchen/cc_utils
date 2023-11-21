@@ -48,7 +48,7 @@ int double_to_str(double val, int preserve, char *output, int outputSize)
     for (int i = 0; i < preserve; ++i) {
         preserve_val *= 10;
     }
-    long_val = (long) (val * preserve_val);
+    long_val = (long)(val * preserve_val);
     if (val * preserve_val - long_val > 0.5) {
         long_val++;
     }

@@ -8,14 +8,12 @@
 #define MPROTECT_RX (PROT_READ | PROT_EXEC)
 #define PAGE_SIZE (1 << 12)
 
-static inline uintptr_t
-alignpage(uintptr_t v)
+static inline uintptr_t alignpage(uintptr_t v)
 {
     return (v & ~((uintptr_t)(PAGE_SIZE - 1u)));
 }
 
-static inline int
-mprotect_write(void *fn)
+static inline int mprotect_write(void *fn)
 {
     int ret;
     void *ap = (void *)alignpage((uintptr_t)fn);
@@ -23,8 +21,7 @@ mprotect_write(void *fn)
     return ret;
 }
 
-static inline int
-mprotect_recovery(void *fn)
+static inline int mprotect_recovery(void *fn)
 {
     int ret;
     void *ap = (void *)alignpage((uintptr_t)fn);
@@ -32,8 +29,7 @@ mprotect_recovery(void *fn)
     return ret;
 }
 
-mock_s *
-mock_init(size_t mock_len)
+mock_s *mock_init(size_t mock_len)
 {
     mock_s *m = calloc(1, sizeof(mock_s) + mock_len);
     m->len = mock_len;

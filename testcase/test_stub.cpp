@@ -2,20 +2,17 @@
 #include "gtest/gtest.h"
 #include <stdint.h>
 
-static void
-test_mock_fn(void)
+static void test_mock_fn(void)
 {
     printf("%s\n", __func__);
 }
 
-static void
-test_fn(void)
+static void test_fn(void)
 {
     printf("%s\n", __func__);
 }
 
-void
-test_void_fn()
+void test_void_fn()
 {
 
 }

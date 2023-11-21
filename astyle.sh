@@ -2,7 +2,7 @@
 
 CURRENT_PATH=$(pwd)
 SCAN_PATH=${CURRENT_PATH}/src,${CURRENT_PATH}/testcase
-SCAN_SUFFIX=*.c,*.h,*.cpp
+SCAN_SUFFIX=*.c,*.h,*.cpp,*.cc
 ASTYLE_BIN=${CURRENT_PATH}/third_party/astyle/_install/bin/astyle
 
 
@@ -25,9 +25,31 @@ done
 
 echo "$FIND_COND"
 
+ASTYLE_CMD_OPTION="                   \
+--style=k&r                           \
+--indent=spaces=4                     \
+--attach-extern-c                     \
+--attach-closing-while                \
+--indent-switches                     \
+--min-conditional-indent=0            \
+--pad-oper                            \
+--pad-comma                           \
+--pad-header                          \
+--unpad-paren                         \
+--align-pointer=name                  \
+--break-one-line-headers              \
+--add-braces                          \
+--attach-return-type                  \
+--attach-return-type-decl             \
+--convert-tabs                        \
+--max-code-length=120                 \
+--break-after-logical                 \
+--mode=c                              \
+--suffix=none                         \
+"
 
 for path in ${SCAN_PATH_ARR[@]}
 do
     found=$(find ${path} -maxdepth 1 ${FIND_COND})
-    ${ASTYLE_BIN} --style=kr -n $found
+    ${ASTYLE_BIN} ${ASTYLE_CMD_OPTION} $found
 done

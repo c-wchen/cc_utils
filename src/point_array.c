@@ -35,5 +35,5 @@ void set_point_value(void *rowPtr, uint32_t index, void *value)
 void *get_point_value(void *rowPtr, uint32_t index)
 {
     uint32_t maxColNum = MAX_LEN_LIMIT / sizeof(uint64_t *);
-    return (void *) ((uint64_t **) rowPtr)[index / maxColNum][index % maxColNum];
+    return (void *)((uint64_t **) rowPtr)[index / maxColNum][index % maxColNum];
 }

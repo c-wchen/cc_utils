@@ -69,40 +69,40 @@ int test(int argc, char *argv[])
     int opt = 0;
     while ((opt = getopt(argc, argv, "hbfloprs")) != -1) {
         switch (opt) {
-        case 'h':
-            printf("Test AddressSanitier\n"
-                   "usage: asan-test [-bfloprs]\n\n"
-                   "-b   heap buffer overflow\n"
-                   "-f   heap use after free\n"
-                   "-l   heap memory leak\n"
-                   "-o   global buffer overflow\n"
-                   "-p   stack use after scope\n"
-                   "-r   stack use after return\n"
-                   "-s   stack buffer overflow\n");
-            break;
-        case 'b':
-            stack_buffer_overflow();
-            break;
-        case 'f':
-            heap_use_after_free();
-            break;
-        case 'l':
-            heap_leak();
-            break;
-        case 'o':
-            global_buffer_overflow();
-            break;
-        case 'p':
-            stack_use_after_scope();
-            break;
-        case 'r':
-            stack_use_after_return();
-            break;
-        case 's':
-            stack_buffer_overflow();
-            break;
-        default:
-            break;
+            case 'h':
+                printf("Test AddressSanitier\n"
+                       "usage: asan-test [-bfloprs]\n\n"
+                       "-b   heap buffer overflow\n"
+                       "-f   heap use after free\n"
+                       "-l   heap memory leak\n"
+                       "-o   global buffer overflow\n"
+                       "-p   stack use after scope\n"
+                       "-r   stack use after return\n"
+                       "-s   stack buffer overflow\n");
+                break;
+            case 'b':
+                stack_buffer_overflow();
+                break;
+            case 'f':
+                heap_use_after_free();
+                break;
+            case 'l':
+                heap_leak();
+                break;
+            case 'o':
+                global_buffer_overflow();
+                break;
+            case 'p':
+                stack_use_after_scope();
+                break;
+            case 'r':
+                stack_use_after_return();
+                break;
+            case 's':
+                stack_buffer_overflow();
+                break;
+            default:
+                break;
         }
     }
     return 0;
