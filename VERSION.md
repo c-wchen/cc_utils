@@ -11,3 +11,7 @@
 1. mockcpp桩测试
 2. pclint
 4. cleancode
+## version 1.3
+1. astyle格式化代码
+2. benmark
+3. testcase和源码分离
