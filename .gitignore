@@ -1,6 +1,7 @@
 *.zip
 cmake-*/
 build/*
+**/build/
 *.iml
 .idea/
 */build

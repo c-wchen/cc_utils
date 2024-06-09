@@ -1,4 +1,7 @@
+mock工具的作用是指定函数的行为（模拟函数的行为）。可以对入参进行校验，对出参进行设定，还可以指定函数的返回值。
+
 ## 模板
+
 
 ```c
 TEST(TEST_MOCKCPP, test_detail)
@@ -108,6 +111,20 @@ add(2, 3);
 | invoke(stubFunc)                  | 打桩函数            |
 | repeact(val, times)               | 重复返回val times次 |
 | increase(from, to)/increase(from) | 返回递增值          |
+
+
+## 支持动态库
+
+mockcpp会根据函数地址进行动态插装，在使用动态库，函数地址指向当前目标文件中的plt项地址，并非指向动态库加载后的函数地址，为了解决该问题，通过dlysm进行查找函数的真实地址。
+
+动态库函数查找: plt->(got)->函数真实地址
+
+```c
+// dlsysm修正动态库的函数地址
+#define DFUNC(func) （(typeof(func) *)dlsym(RTLD_NEXT, #func))
+
+MOCKER(DFUNC(func))
+```
 
 ## 参考
 
