@@ -14,3 +14,5 @@ endif ()
 if (ENABLE_DEBUG)
     target_compile_options(${PROJECT_NAME} PRIVATE -g -O1)
 endif()
+
+add_subdirectory(cli)
