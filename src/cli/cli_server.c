@@ -60,7 +60,7 @@ command_t commands[1024] = {
 int cli_create(const char *name)
 {
     cli_handler_t *handler = (cli_handler_t *) malloc(sizeof(cli_handler_t));
-    if (handler) {
+    if (!handler) {
         return -ENOSPC;
     }
     pid_t pid = getpid();
@@ -71,6 +71,7 @@ int cli_create(const char *name)
         free(handler);
         return ret;
     }
+    LOG_DEBUG("bind and listen success.");
     ret = pthread_create(&handler->cli_thread, NULL, msg_poll, handler);
 
     if (ret < 0) {
@@ -310,9 +311,13 @@ void do_accept(int32_t socket_fd)
         }
         
         if (++pos >= sizeof(cmd)) {
-            LOG_ERROR("error reading request too long");
+            LOG_ERROR("error reading request too long, %d", pos);
             close(connection_fd);
             return;
+        }
+
+        if (ret > 0) {
+            break;
         }
     }
 
