@@ -16,6 +16,8 @@
 
  #include <signal.h>
 
+ #include <stdarg.h>
+
 #include "cli/cli.h"
 #include "cli_internal.h"
 
@@ -42,13 +44,22 @@ typedef struct command {
     void (*handler)(int32_t argc, char **argv);
 } command_t;
 
+typedef struct {
+    pthread_mutex_t mutex;
+    char *buf;
+    int32_t buf_size;
+    int32_t pos;
+} cmdprint_t;
+
+cmdprint_t cdp = {0};
+
 #define CMD_DEF(s, h, d) {.subcommand = s, .help = h, .handler = d}
 
 void cmd_test(int32_t argc, char **argv)
 {
-    LOG_INFO("argc: %d", argc);
+    CMD_PRINTLN("argc: %d", argc);
     for (int32_t i = 0; i < argc; i++) {
-        LOG_INFO("argv[%d] = %s", i, argv[i]);
+        CMD_PRINTLN("argv[%d] = %s", i, argv[i]);
     }
     return;
 }
@@ -103,6 +114,8 @@ int cli_create(const char *name)
     memcpy(&handler->name, name, strlen(name) + 1);
     command_handler = handler;
 
+    cdp_init();
+
     atexit(remove_all_cleanup_files);
     signal(SIGINT, common_signal);
     return 0;
@@ -112,6 +125,7 @@ int cli_create(const char *name)
 int cli_destroy()
 {
     if (command_handler) {
+        cdp_destroy();
         close(command_handler->socket_fd);
         free(command_handler);
         command_handler = NULL;
@@ -286,7 +300,7 @@ uint32_t msg_decode(char *buf, char **sub_command, int32_t *argc, char **argv)
 
 char *command_output()
 {
-    return "success.";
+    return cdp_output();
 }
 
 
@@ -364,7 +378,82 @@ void do_accept(int32_t socket_fd)
     if (ret < 0) {
         LOG_ERROR("error writing response length %s", strerror(ret));
     }
+    cdp_reinit();
     close(connection_fd);
 }
 
 
+
+
+void cdp_init()
+{
+    pthread_mutex_init(&cdp.mutex, NULL);
+    
+    cdp.buf = (char *)malloc(sizeof(char) * 4096);
+    cdp.buf_size = 4096;
+    cdp.pos = 0;
+}
+
+void cdp_reinit()
+{
+    
+    if (cdp.buf == NULL) {
+        return;
+    }
+    pthread_mutex_lock(&cdp.mutex);
+    if (cdp.buf_size > 10240) {
+        free(cdp.buf);
+        cdp.buf = (char *)malloc(sizeof(char) * 4096);
+        cdp.buf_size = 4096;
+    }
+    cdp.pos = 0;
+    pthread_mutex_unlock(&cdp.mutex);
+}
+
+void cdp_destroy()
+{
+    if (cdp.buf) {
+        pthread_mutex_destroy(&cdp.mutex);
+        free(cdp.buf);
+    }
+    cdp.pos = 0;
+    cdp.buf_size = 0;
+    return;
+}
+
+char *cdp_output()
+{
+    if (cdp.pos > 0) {
+        return cdp.buf;
+    } else {
+        return "success";
+    }
+}
+
+void cdp_print(const char *fmt, ...)
+{
+    va_list ap;
+    
+    char buffer[1024];
+
+    va_start(ap, fmt);
+    int off = vsnprintf(buffer, 1024, fmt, ap);
+    va_end(ap);
+
+    if (off <= 0 || off + 1 > 1024) {
+        LOG_ERROR("onetime print too long, size: %d", off);
+        return;
+    }
+
+    pthread_mutex_lock(&cdp.mutex);
+    if (off + cdp.pos >= cdp.buf_size) {
+        cdp.buf = (char *)realloc(cdp.buf, cdp.buf_size * 2);
+        cdp.buf_size = cdp.buf_size * 2;
+    }
+
+    memcpy(cdp.buf + cdp.pos, buffer, off);
+    cdp.pos += off;
+    *(cdp.buf + cdp.pos + 1) = '\0';
+    pthread_mutex_unlock(&cdp.mutex);
+    return;
+}
