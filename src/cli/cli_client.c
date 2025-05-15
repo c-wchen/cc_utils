@@ -19,55 +19,86 @@
 #include "cli_internal.h"
 
 
+#define PRINTLN(fmt, ...) printf(fmt "\n", ##__VA_ARGS__)
 #define PRINT(fmt, ...) printf(fmt "\n", ##__VA_ARGS__)
+
+int is_directory(const char *path) {
+    struct stat statbuf;
+    
+    if (lstat(path, &statbuf) != 0) {
+        return 0;
+    }
+    
+    return S_ISDIR(statbuf.st_mode);
+}
+
+bool pid_exist(const char* pid) {
+    char *e;
+    uint64_t v = strtol(pid, &e, 10);
+    if ('\0' != *e) {
+        return false;
+    } else {
+        char proc_path[64];
+        snprintf(proc_path, 64, "/proc/%d", v);
+        if (is_directory(proc_path)) {
+            return true;
+        } else {
+            printf("xxxxxxxxxx %d %s\n", v, pid);
+            return false;
+        }
+        
+    }
+}
 
 int main(int argc, char **argv)
 {
 
-    if (argc < 3 && argv[0] == NULL) {
-        PRINT("invalid parameters.");
-        return 0;
+    if (argc < 3) {
+        PRINTLN("invalid parameters.");
+        return -EINVAL;
     }
-    if (argc - 3 > 32) {
-        PRINT("too many parameters.");
-        return 0;
+    if (argc - 3 > COMMAND_MAX_ARGC) {
+        PRINTLN("too many parameters.");
+        return -EINVAL;
     }
 
     for (int i = 0; i < argc; i++) {
-        if (strlen(argv[i]) + 1 > 32) {
-            PRINT("(%s) parameters to long.", argv[i]);
-            return 0;
+        if (strlen(argv[i]) + 1 > COMMAND_MAX_LEN) {
+            PRINTLN("(%s) parameters to long.", argv[i]);
+            return -EINVAL;
         }
     }
 
-    const char *cmd_handler_name = argv[1];
-    DIR *cmd_dir = opendir("/var/tmp");
+    const char *proc_name = argv[1];
+    DIR *cmd_dir = opendir(SOCKET_PATH_DIR);
     struct dirent *entry;
     struct stat file_stat;
     bool find = false;
-    char socket_path[1024];
+    char socket_path[SOCKET_PATH_LEN];
     while (entry = readdir(cmd_dir)) {
-        snprintf(socket_path, 1024, "/var/tmp/%s", entry->d_name);
+        int32_t offset = snprintf(socket_path, SOCKET_PATH_LEN, SOCKET_PATH_DIR "/%s", entry->d_name);
+        if (offset + 1 >= SOCKET_PATH_LEN) {
+            continue;
+        }
         if (stat(socket_path, &file_stat) == -1) {
             continue;
         }
-        
         if (S_ISSOCK(file_stat.st_mode)) {
-            PRINT("entry: %s/%s", entry->d_name, cmd_handler_name);
-            if (strncmp(entry->d_name, cmd_handler_name, strlen(cmd_handler_name)) == 0) {
-                find = true;
-                break;
+            if (strncmp(entry->d_name, proc_name, strlen(proc_name)) == 0) {
+                PRINTLN("entry: %s cmd: %s %d", entry->d_name, proc_name, strlen(proc_name));
+                if (strlen(entry->d_name) > strlen(proc_name) + 2 &&
+                    pid_exist(entry->d_name + strlen(proc_name) + 1)) { /* format: name.pid */
+                    find = true;
+                    break;
+                }
             }
         }
     }
-    if (find) {
-        PRINT("find socket path: %s", socket_path);
-    } else {
-        return -1;
-    }
-    
 
-    snprintf(socket_path, 128, "/var/tmp/%s", entry->d_name);
+    if (!find) {
+        PRINTLN("not found name %s", proc_name);
+        return -ENOENT;
+    }
 
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
@@ -77,45 +108,61 @@ int main(int argc, char **argv)
 
     int32_t sock_fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sock_fd == -1) {
-        PRINT("socket create faild (%s)", strerror(errno));
+        PRINTLN("socket create faild (%s)", strerror(errno));
         return errno;
     }
 
     if (connect(sock_fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-        PRINT("socket connect faild (%s)", strerror(errno));
+        PRINTLN("socket connect faild (%s)", strerror(errno));
     }
 
 
     char buffer[1024];
-    msg_encode(buffer, argv[1], argc - 2, argv + 2);
-    if (write(sock_fd, buffer, sizeof(buffer)) == -1) {
-        PRINT("socket message send faild (%s)", strerror(errno));
+    uint32_t msg_len = msg_encode(buffer, argv[2], argc - 3, argv + 3);
+    if (safe_write(sock_fd, buffer, msg_len) == -1) {
+        PRINTLN("socket message send faild (%s)", strerror(errno));
         close(sock_fd);
         return 1;
     }
+    PRINTLN("reply mesage:");
 
-    struct timeval timeout = {.tv_sec = 60, .tv_usec = 0};
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(sock_fd, &readfds);
+    struct timeval timeout = {.tv_sec = COMMAND_TIMEOUT, .tv_usec = 0};
+    fd_set rfds;
+    FD_ZERO(&rfds);
+    FD_SET(sock_fd, &rfds);
     
-    int ready = select(sock_fd + 1, &readfds, NULL, NULL, &timeout);
+    int ready = select(sock_fd + 1, &rfds, NULL, NULL, &timeout);
 
     if (ready == -1) {
-        PRINT("select faild.");
+        PRINTLN("start select faild.");
         close(sock_fd);
         return 1;
     } else if (ready == 0) {
-        PRINT("timeout.");
+        PRINTLN("command wait timeout.");
         close(sock_fd);
         return 1;
     }
+    int32_t pos = 0;
 
-    memset(buffer, 0, 1024);
-    int cnt = safe_read(sock_fd, buffer, 1024);
-    if (cnt > 0) {
-        PRINT("%s", buffer);
+    while (1) {
+        int ret = safe_read(sock_fd, &buffer[pos], 1);
+        if (ret <= 0) {
+            if (ret < 0) {
+                PRINTLN("error reading request code: %s", strerror(ret));
+            }
+            if (pos) {
+                buffer[pos] = '\0';
+                PRINT("%s", buffer);
+                break;
+            }
+        }
+        if (++pos >= sizeof(buffer)) {
+            buffer[pos] = '\0';
+            PRINT("%s", buffer);
+            pos = 0;
+        }
     }
 
     close(sock_fd);
+    return 0;
 }

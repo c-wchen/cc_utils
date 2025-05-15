@@ -14,19 +14,22 @@
 #include <sys/epoll.h>
 #include <poll.h>
 
+ #include <signal.h>
 
 #include "cli/cli.h"
+#include "cli_internal.h"
 
 void do_accept(int32_t socket_fd);
 void *msg_poll(void *arg);
 int32_t bind_and_listen(const char *socket_path, int32_t *fd);
 
-#define LOG_ERROR(fmt, ...)   printf("[ERROR] " fmt "[%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
-#define LOG_INFO(fmt, ...)    printf("[INFO] " fmt "[%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
-#define LOG_WARN(fmt, ...)    printf("[WARN] " fmt "[%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
-#define LOG_DEBUG(fmt, ...)   printf("[DEBUG] " fmt "[%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
+#define LOG_ERROR(fmt, ...)   printf("[ERROR] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
+#define LOG_INFO(fmt, ...)    printf("[INFO] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
+#define LOG_WARN(fmt, ...)    printf("[WARN] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
+#define LOG_DEBUG(fmt, ...)   printf("[DEBUG] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
 
 typedef struct cli_handler {
+    char name[32];
     pthread_t cli_thread;
     int socket_fd;
 } cli_handler_t;
@@ -40,7 +43,6 @@ typedef struct command {
 } command_t;
 
 #define CMD_DEF(s, h, d) {.subcommand = s, .help = h, .handler = d}
-
 
 void cmd_test(int32_t argc, char **argv)
 {
@@ -56,16 +58,33 @@ command_t commands[1024] = {
 };
 
 
+void remove_all_cleanup_files()
+{
+    LOG_DEBUG("begin clean files");
+    pid_t pid = getpid();
+    char socket_path[64];
+    sprintf(socket_path, DF_SOCKET_DIR, command_handler->name, pid);
+    unlink(socket_path);
+}
+
+void common_signal(int sig)
+{
+    exit(-1);
+}
 
 int cli_create(const char *name)
 {
+    if (strlen(name) + 1 > 32) {
+        LOG_ERROR("cli name is too long %s.", name);
+        return -EINVAL;
+    }
     cli_handler_t *handler = (cli_handler_t *) malloc(sizeof(cli_handler_t));
     if (!handler) {
         return -ENOSPC;
     }
     pid_t pid = getpid();
-    char socket_path[64];
-    sprintf(socket_path, "/var/tmp/%s.%d", name, pid);
+    char socket_path[SOCKET_PATH_LEN];
+    sprintf(socket_path, DF_SOCKET_DIR, name, pid);
     int ret = bind_and_listen(socket_path, &handler->socket_fd);
     if (ret < 0) {
         free(handler);
@@ -80,9 +99,15 @@ int cli_create(const char *name)
         free(handler);
         return ret;
     }
+
+    memcpy(&handler->name, name, strlen(name) + 1);
     command_handler = handler;
+
+    atexit(remove_all_cleanup_files);
+    signal(SIGINT, common_signal);
     return 0;
 }
+
 
 int cli_destroy()
 {
@@ -100,6 +125,7 @@ int32_t bind_and_listen(const char *socket_path, int32_t *fd)
     int ret = 0;
     if (strlen(socket_path) > sizeof(address.sun_path) - 1) {
         LOG_ERROR("socket path %s is too long!", socket_path);
+        return -EINVAL;
     }
     int socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
 
@@ -153,7 +179,7 @@ void *msg_poll(void *arg)
         fds[0].fd = handler->socket_fd;
         fds[0].events = POLLIN | POLLRDBAND;
 
-        LOG_DEBUG("entry waiting");
+        LOG_DEBUG("start waiting");
         int ret = poll(fds, 1, -1);
         if (ret < 0) {
             if (ret == EINTR) {
@@ -162,7 +188,7 @@ void *msg_poll(void *arg)
             LOG_ERROR("poll(2) error: %s", strerror(ret));
             return NULL;
         }
-        LOG_DEBUG("entry wake");
+        LOG_DEBUG("end wake");
 
         if (fds[0].revents & POLLIN) {
             // Send out some data
@@ -194,7 +220,7 @@ ssize_t safe_read(int fd, void *buf, size_t count)
     return cnt;
 }
 
-static int safe_write(int fd, const void *buf, signed int len)
+int safe_write(int fd, const void *buf, signed int len)
 {
     const char *b = (const char*)buf;
     /* Handle EINTR and short writes */
@@ -213,53 +239,54 @@ static int safe_write(int fd, const void *buf, signed int len)
     }
 }
 
-void msg_encode(char *buf, char *sub_command, int32_t argc, char **argv)
+uint32_t msg_encode(char *buf, char *sub_command, int32_t argc, char **argv)
 {
+    LOG_DEBUG("subcommand: %s, argc: %d", sub_command, argc);
     size_t offset = 0;
     *(uint32_t *)buf = strlen(sub_command) + 1;
     offset += 4;
     offset += sprintf(buf + offset, "%s", sub_command) + 1;
-    *(int32_t *)(buf + offset) = argc;
+    *(uint32_t *)(buf + offset) = argc;
 
     offset += 4;
-    for (int32_t i = 0; i < argc; i++) {
-        *(int32_t *)(buf + offset) += strlen(argv[i]) + 1;
+    for (uint32_t i = 0; i < argc; i++) {
+        *(uint32_t *)(buf + offset) = strlen(argv[i]) + 1;
         offset += 4;
         offset += sprintf(buf + offset, "%s", argv[i]) + 1;
     }
-    return;
+    *(buf + offset) = '\n'; /* \n terminated string */
+    return offset + 1;
 }
 
 
-void msg_decode(char *buf, char *sub_command, int32_t *argc, char **argv)
+uint32_t msg_decode(char *buf, char **sub_command, int32_t *argc, char **argv)
 {
     size_t offset = 0;
-    int32_t subcommand_len = *(uint32_t *)(buf + offset);
+    uint32_t subcommand_len = *(uint32_t *)(buf + offset);
     offset += 4;
     assert(subcommand_len <= COMMAND_MAX_LEN);
 
-    sub_command = (char *)(buf + offset);
+    *sub_command = (char *)(buf + offset);
     offset += subcommand_len;
 
-    int32_t decode_argc = *(uint32_t *)(buf + offset);
+    uint32_t decode_argc = *(uint32_t *)(buf + offset);
     offset += 4;
     assert(decode_argc <= COMMAND_MAX_LEN);
 
-    for (int32_t i = 0; i < decode_argc; i++) {
-        int32_t arg_len = *(int32_t *)(buf + offset);
+    for (uint32_t i = 0; i < decode_argc; i++) {
+        uint32_t arg_len = *(uint32_t *)(buf + offset);
         assert(arg_len <= COMMAND_MAX_LEN);
         offset += 4;
         argv[i] = (char *)(buf + offset);
         offset += arg_len;
     }
-    
     *argc = decode_argc;
-    return;
+    return offset;
 }
 
-char *comand_output()
+char *command_output()
 {
-    return "success";
+    return "success.";
 }
 
 
@@ -289,7 +316,7 @@ void do_accept(int32_t socket_fd)
 {
     struct sockaddr_un address;
     socklen_t address_length = sizeof(address);
-    LOG_DEBUG("calling accept");
+    LOG_DEBUG("begin accept");
     int connection_fd = accept(socket_fd, (struct sockaddr*) &address, &address_length);
     if (connection_fd < 0) {
         int err = errno;
@@ -309,28 +336,31 @@ void do_accept(int32_t socket_fd)
             close(connection_fd);
             return;
         }
-        
+        // new protocol: \n terminated string
+        if (cmd[pos] == '\n') {
+            break;
+        }
         if (++pos >= sizeof(cmd)) {
             LOG_ERROR("error reading request too long, %d", pos);
             close(connection_fd);
             return;
-        }
-
-        if (ret > 0) {
-            break;
         }
     }
 
     char *subcommand;
     int32_t argc;
     char *argv[32] = {0};
-    msg_decode(cmd, subcommand, &argc, argv);
+    msg_decode(cmd, &subcommand, &argc, argv);
+
+    LOG_DEBUG("begin execute %d", argc);
     
     int rval = command_execute(subcommand, argc, argv);
 
+    LOG_DEBUG("end execute");
 
-    char *output = comand_output();
-    int ret = safe_write(connection_fd, output, sizeof(output));
+
+    char *output = command_output();
+    int ret = safe_write(connection_fd, output, strlen(output));
     if (ret < 0) {
         LOG_ERROR("error writing response length %s", strerror(ret));
     }

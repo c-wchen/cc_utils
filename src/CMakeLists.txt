@@ -12,7 +12,7 @@ if (ENABLE_COVERAGE)
 endif ()
 
 if (ENABLE_DEBUG)
-    target_compile_options(${PROJECT_NAME} PRIVATE -g -O1)
+    add_compile_options(-g -O0)
 endif()
 
 add_subdirectory(cli)
