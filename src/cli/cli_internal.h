@@ -20,18 +20,11 @@ ssize_t safe_read(int fd, void *buf, size_t count);
 int safe_write(int fd, const void *buf, signed int len);
 uint32_t msg_encode(char *buf, char *sub_command, int32_t argc, char **argv);
 
-void cdp_init();
 
-void cdp_reinit();
+void cdp_print(void *cdp, const char *fmt, ...);
 
-void cdp_destroy();
-
-char *cdp_output();
-
-void cdp_print(const char *fmt, ...);
-
-#define CMD_PRINT(fmt, ...) cdp_print(fmt, ##__VA_ARGS__)
-#define CMD_PRINTLN(fmt, ...) cdp_print(fmt "\n", ##__VA_ARGS__)
+#define CMD_PRINT(cdp, fmt, ...) cdp_print(cdp, fmt, ##__VA_ARGS__)
+#define CMD_PRINTLN(cdp, fmt, ...) cdp_print(cdp, fmt "\n", ##__VA_ARGS__)
 
 #ifdef __cplusplus /* CLI_INTERNAL_H */
 }

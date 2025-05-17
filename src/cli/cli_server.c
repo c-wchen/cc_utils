@@ -14,35 +14,17 @@
 #include <sys/epoll.h>
 #include <poll.h>
 
- #include <signal.h>
-
- #include <stdarg.h>
+#include <signal.h>
+#include <stdarg.h>
 
 #include "cli/cli.h"
 #include "cli_internal.h"
 
-void do_accept(int32_t socket_fd);
-void *msg_poll(void *arg);
-int32_t bind_and_listen(const char *socket_path, int32_t *fd);
 
 #define LOG_ERROR(fmt, ...)   printf("[ERROR] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
 #define LOG_INFO(fmt, ...)    printf("[INFO] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
 #define LOG_WARN(fmt, ...)    printf("[WARN] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
 #define LOG_DEBUG(fmt, ...)   printf("[DEBUG] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
-
-typedef struct cli_handler {
-    char name[32];
-    pthread_t cli_thread;
-    int socket_fd;
-} cli_handler_t;
-
-cli_handler_t *command_handler = NULL;
-
-typedef struct command {
-    const char *subcommand;
-    const char *help;
-    void (*handler)(int32_t argc, char **argv);
-} command_t;
 
 typedef struct {
     pthread_mutex_t mutex;
@@ -51,22 +33,42 @@ typedef struct {
     int32_t pos;
 } cmdprint_t;
 
-cmdprint_t cdp = {0};
+typedef struct cli_handler {
+    char name[32];
+    pthread_t cli_thread;
+    pthread_spinlock_t spin;
+    int socket_fd;
+    cmdprint_t cdp;
+} cli_handler_t;
 
-#define CMD_DEF(s, h, d) {.subcommand = s, .help = h, .handler = d}
+typedef struct command {
+    const char *subcommand; /* TODO: subbcommand、help改成字符串数组 */
+    const char *help;
+    void (*handler)(void *cdp, int32_t argc, char **argv);
+} command_t;
 
-void cmd_test(int32_t argc, char **argv)
+void cdp_init(cmdprint_t *cdp);
+void cdp_reinit(cmdprint_t *cdp);
+void cdp_destroy(cmdprint_t *cdp);
+char *cdp_output(cmdprint_t *cdp);
+void *msg_poll(void *arg);
+int32_t bind_and_listen(const char *socket_path, int32_t *fd);
+void do_accept(cli_handler_t *handler, int32_t socket_fd);
+
+
+cli_handler_t *command_handler = NULL;
+
+
+void cmd_test(void *cdp, int32_t argc, char **argv)
 {
-    CMD_PRINTLN("argc: %d", argc);
+    CMD_PRINTLN(cdp, "argc: %d", argc);
     for (int32_t i = 0; i < argc; i++) {
-        CMD_PRINTLN("argv[%d] = %s", i, argv[i]);
+        CMD_PRINTLN(cdp, "argv[%d] = %s", i, argv[i]);
     }
     return;
 }
 
-command_t commands[1024] = {
-    CMD_DEF("test", "test command", cmd_test)
-};
+command_t commands[1024] = {0};
 
 
 void remove_all_cleanup_files()
@@ -89,35 +91,48 @@ int cli_create(const char *name)
         LOG_ERROR("cli name is too long %s.", name);
         return -EINVAL;
     }
-    cli_handler_t *handler = (cli_handler_t *) malloc(sizeof(cli_handler_t));
-    if (!handler) {
+    cli_handler_t *inst = (cli_handler_t *) malloc(sizeof(cli_handler_t));
+    if (!inst) {
         return -ENOSPC;
     }
     pid_t pid = getpid();
     char socket_path[SOCKET_PATH_LEN];
     sprintf(socket_path, DF_SOCKET_DIR, name, pid);
-    int ret = bind_and_listen(socket_path, &handler->socket_fd);
+    int ret = bind_and_listen(socket_path, &inst->socket_fd);
     if (ret < 0) {
-        free(handler);
+        free(inst);
         return ret;
     }
     LOG_DEBUG("bind and listen success.");
-    ret = pthread_create(&handler->cli_thread, NULL, msg_poll, handler);
+
+    ret = pthread_spin_init(&inst->spin, PTHREAD_PROCESS_PRIVATE);
 
     if (ret < 0) {
-        LOG_ERROR("pthread create faild (%s).", strerror(ret));
-        close(handler->socket_fd);
-        free(handler);
+        LOG_ERROR("pthread spin faild (%s).", strerror(ret));
+        close(inst->socket_fd);
+        free(inst);
         return ret;
     }
 
-    memcpy(&handler->name, name, strlen(name) + 1);
-    command_handler = handler;
+    ret = pthread_create(&inst->cli_thread, NULL, msg_poll, inst);
 
-    cdp_init();
+    if (ret < 0) {
+        LOG_ERROR("pthread create faild (%s).", strerror(ret));
+        close(inst->socket_fd);
+        free(inst);
+        return ret;
+    }
+
+    cdp_init(&inst->cdp);
+
+    memcpy(&inst->name, name, strlen(name) + 1);
+    command_handler = inst;
+
 
     atexit(remove_all_cleanup_files);
     signal(SIGINT, common_signal);
+
+    cli_register("test", "test command", cmd_test);
     return 0;
 }
 
@@ -125,12 +140,33 @@ int cli_create(const char *name)
 int cli_destroy()
 {
     if (command_handler) {
-        cdp_destroy();
+        cdp_destroy(&command_handler->cdp);
         close(command_handler->socket_fd);
         free(command_handler);
         command_handler = NULL;
     }
     return 0;
+}
+
+int32_t cli_register(const char *sub_command, const char *help, void (*handler)(void *cdp, int32_t argc, char** argv))
+{
+    static int regcnt = 0;
+    pthread_spin_lock(&command_handler->spin);
+    
+    if (regcnt >= sizeof(commands) / sizeof(commands[0]) - 1) {
+        LOG_ERROR("register command faild, too many command registers.");
+        pthread_spin_unlock(&command_handler->spin);
+        return -ENOSPC;
+    }
+    for (int i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
+        if (commands[i].handler == NULL) {
+            commands[i].subcommand = sub_command;
+            commands[i].help = help;
+            commands[i].handler = handler;
+        }
+    }
+
+    pthread_spin_unlock(&command_handler->spin);
 }
 
 int32_t bind_and_listen(const char *socket_path, int32_t *fd)
@@ -206,7 +242,7 @@ void *msg_poll(void *arg)
 
         if (fds[0].revents & POLLIN) {
             // Send out some data
-            do_accept(fds[0].fd);
+            do_accept(handler, fds[0].fd);
         }
     }
     return NULL;
@@ -298,9 +334,9 @@ uint32_t msg_decode(char *buf, char **sub_command, int32_t *argc, char **argv)
     return offset;
 }
 
-char *command_output()
+char *command_output(cmdprint_t *cdp)
 {
-    return cdp_output();
+    return cdp_output(cdp);
 }
 
 
@@ -317,16 +353,16 @@ command_t *command_find(const char *subcommand)
     return NULL;
 }
 
-int32_t command_execute(const char*subcommand, int32_t argc, char **argv)
+int32_t command_execute(cli_handler_t *handler, const char*subcommand, int32_t argc, char **argv)
 {
     command_t *cmd = command_find(subcommand);
     if (cmd) {
-        cmd->handler(argc, argv);
+        cmd->handler((void *)&handler->cdp, argc, argv);
     }
     return 0;
 }
 
-void do_accept(int32_t socket_fd)
+void do_accept(cli_handler_t *handler, int32_t socket_fd)
 {
     struct sockaddr_un address;
     socklen_t address_length = sizeof(address);
@@ -368,70 +404,67 @@ void do_accept(int32_t socket_fd)
 
     LOG_DEBUG("begin execute %d", argc);
     
-    int rval = command_execute(subcommand, argc, argv);
+    int rval = command_execute(handler, subcommand, argc, argv);
 
     LOG_DEBUG("end execute");
 
-
-    char *output = command_output();
+    char *output = command_output(&handler->cdp);
     int ret = safe_write(connection_fd, output, strlen(output));
     if (ret < 0) {
         LOG_ERROR("error writing response length %s", strerror(ret));
     }
-    cdp_reinit();
+    cdp_reinit(&handler->cdp);
     close(connection_fd);
 }
 
-
-
-
-void cdp_init()
+void cdp_init(cmdprint_t *cdp)
 {
-    pthread_mutex_init(&cdp.mutex, NULL);
+    pthread_mutex_init(&cdp->mutex, NULL);
     
-    cdp.buf = (char *)malloc(sizeof(char) * 4096);
-    cdp.buf_size = 4096;
-    cdp.pos = 0;
+    cdp->buf = (char *)malloc(sizeof(char) * 4096);
+    cdp->buf_size = 4096;
+    cdp->pos = 0;
 }
 
-void cdp_reinit()
+void cdp_reinit(cmdprint_t *cdp)
 {
     
-    if (cdp.buf == NULL) {
+    if (cdp->buf == NULL) {
         return;
     }
-    pthread_mutex_lock(&cdp.mutex);
-    if (cdp.buf_size > 10240) {
-        free(cdp.buf);
-        cdp.buf = (char *)malloc(sizeof(char) * 4096);
-        cdp.buf_size = 4096;
+    pthread_mutex_lock(&cdp->mutex);
+    if (cdp->buf_size > 10240) {
+        free(cdp->buf);
+        cdp->buf = (char *)malloc(sizeof(char) * 4096);
+        cdp->buf_size = 4096;
     }
-    cdp.pos = 0;
-    pthread_mutex_unlock(&cdp.mutex);
+    cdp->pos = 0;
+    pthread_mutex_unlock(&cdp->mutex);
 }
 
-void cdp_destroy()
+void cdp_destroy(cmdprint_t *cdp)
 {
-    if (cdp.buf) {
-        pthread_mutex_destroy(&cdp.mutex);
-        free(cdp.buf);
+    if (cdp->buf) {
+        pthread_mutex_destroy(&cdp->mutex);
+        free(cdp->buf);
     }
-    cdp.pos = 0;
-    cdp.buf_size = 0;
+    cdp->pos = 0;
+    cdp->buf_size = 0;
     return;
 }
 
-char *cdp_output()
+char *cdp_output(cmdprint_t *cdp)
 {
-    if (cdp.pos > 0) {
-        return cdp.buf;
+    if (cdp->pos > 0) {
+        return cdp->buf;
     } else {
         return "success";
     }
 }
 
-void cdp_print(const char *fmt, ...)
+void cdp_print(void *out_hdl, const char *fmt, ...)
 {
+    cmdprint_t *cdp = (cmdprint_t *)out_hdl;
     va_list ap;
     
     char buffer[1024];
@@ -445,15 +478,15 @@ void cdp_print(const char *fmt, ...)
         return;
     }
 
-    pthread_mutex_lock(&cdp.mutex);
-    if (off + cdp.pos >= cdp.buf_size) {
-        cdp.buf = (char *)realloc(cdp.buf, cdp.buf_size * 2);
-        cdp.buf_size = cdp.buf_size * 2;
+    pthread_mutex_lock(&cdp->mutex);
+    if (off + cdp->pos >= cdp->buf_size) {
+        cdp->buf = (char *)realloc(cdp->buf, cdp->buf_size * 2);
+        cdp->buf_size = cdp->buf_size * 2;
     }
 
-    memcpy(cdp.buf + cdp.pos, buffer, off);
-    cdp.pos += off;
-    *(cdp.buf + cdp.pos + 1) = '\0';
-    pthread_mutex_unlock(&cdp.mutex);
+    memcpy(cdp->buf + cdp->pos, buffer, off);
+    cdp->pos += off;
+    *(cdp->buf + cdp->pos + 1) = '\0';
+    pthread_mutex_unlock(&cdp->mutex);
     return;
 }

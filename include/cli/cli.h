@@ -11,7 +11,7 @@ extern "C" {
 int32_t cli_create(const char *name);
 int32_t cli_destroy();
 
-int32_t cli_register(const char *sub_command, const char *help, void *(*handler)(int32_t argc, char* argv));
+int32_t cli_register(const char *sub_command, const char *help, void (*handler)(void *cdp, int32_t argc, char** argv));
 
 
 #ifdef __cplusplus /* CLI_H */
