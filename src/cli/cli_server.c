@@ -14,6 +14,10 @@
 #include <sys/epoll.h>
 #include <poll.h>
 
+#include <fcntl.h>
+#include <unistd.h>
+
+
 #include <signal.h>
 #include <stdarg.h>
 
@@ -25,6 +29,13 @@
 #define LOG_INFO(fmt, ...)    printf("[INFO] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
 #define LOG_WARN(fmt, ...)    printf("[WARN] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
 #define LOG_DEBUG(fmt, ...)   printf("[DEBUG] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
+
+enum {
+    CLI_INIT,
+    /* CLI_RUNNING, */
+    CLI_DOWN,
+    CLI_FINI
+};
 
 typedef struct {
     pthread_mutex_t mutex;
@@ -39,6 +50,9 @@ typedef struct cli_handler {
     pthread_spinlock_t spin;
     int socket_fd;
     cmdprint_t cdp;
+    int32_t pipe_rd;
+    int32_t pipe_wr;
+    int32_t state;
 } cli_handler_t;
 
 typedef struct command {
@@ -85,6 +99,28 @@ void common_signal(int sig)
     exit(-1);
 }
 
+int32_t create_wakeup_pipe(int *pipe_rd, int *pipe_wr)
+{
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        return -1;
+    }
+
+    *pipe_rd = pipefd[0];
+    *pipe_wr = pipefd[1];
+    return 0;
+}
+
+
+void pipe_wakeup(int fd)
+{
+    char buf[1] = { 0x0 };
+    int r = safe_write(fd, buf, sizeof(buf));
+    assert(r == 0);
+    return;
+}
+
+
 int cli_create(const char *name)
 {
     if (strlen(name) + 1 > 32) {
@@ -114,6 +150,14 @@ int cli_create(const char *name)
         return ret;
     }
 
+    ret = create_wakeup_pipe(&inst->pipe_rd, &inst->pipe_wr);
+    if (ret < 0) {
+        LOG_ERROR("create wakeup pipe (%s).", strerror(ret));
+        close(inst->socket_fd);
+        free(inst);
+        return ret;
+    }
+
     ret = pthread_create(&inst->cli_thread, NULL, msg_poll, inst);
 
     if (ret < 0) {
@@ -126,6 +170,7 @@ int cli_create(const char *name)
     cdp_init(&inst->cdp);
 
     memcpy(&inst->name, name, strlen(name) + 1);
+    inst->state = CLI_INIT;
     command_handler = inst;
 
 
@@ -140,8 +185,14 @@ int cli_create(const char *name)
 int cli_destroy()
 {
     if (command_handler) {
+        command_handler->state = CLI_DOWN;
+        pipe_wakeup(command_handler->pipe_wr);
+        (void)pthread_join(command_handler->cli_thread, NULL);
         cdp_destroy(&command_handler->cdp);
         close(command_handler->socket_fd);
+        close(command_handler->pipe_rd);
+        close(command_handler->pipe_wr);
+        command_handler->state = CLI_FINI;
         free(command_handler);
         command_handler = NULL;
     }
@@ -223,14 +274,17 @@ void *msg_poll(void *arg)
 
     cli_handler_t *handler = (cli_handler_t *)arg;
     while (true) {
-        struct pollfd fds[1];
+        struct pollfd fds[2];
         // FIPS zeroization audit 20191115: this memset is fine.
         memset(fds, 0, sizeof(fds));
         fds[0].fd = handler->socket_fd;
         fds[0].events = POLLIN | POLLRDBAND;
 
+        fds[1].fd = handler->pipe_rd;
+        fds[1].events = POLLIN | POLLRDBAND;
+
         LOG_DEBUG("start waiting");
-        int ret = poll(fds, 1, -1);
+        int ret = poll(fds, 2, -1);
         if (ret < 0) {
             if (ret == EINTR) {
                 continue;
@@ -239,6 +293,10 @@ void *msg_poll(void *arg)
             return NULL;
         }
         LOG_DEBUG("end wake");
+
+        if (handler->state == CLI_DOWN) {
+            break;
+        }
 
         if (fds[0].revents & POLLIN) {
             // Send out some data

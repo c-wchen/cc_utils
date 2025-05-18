@@ -43,7 +43,6 @@ bool pid_exist(const char* pid) {
         if (is_directory(proc_path)) {
             return true;
         } else {
-            printf("xxxxxxxxxx %d %s\n", v, pid);
             return false;
         }
         
@@ -94,6 +93,7 @@ int main(int argc, char **argv)
             }
         }
     }
+    closedir(cmd_dir);
 
     if (!find) {
         PRINTLN("not found name %s", proc_name);
