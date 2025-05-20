@@ -214,6 +214,7 @@ int32_t cli_register(const char *sub_command, const char *help, void (*handler)(
             commands[i].subcommand = sub_command;
             commands[i].help = help;
             commands[i].handler = handler;
+            break;
         }
     }
 
@@ -414,6 +415,7 @@ command_t *command_find(const char *subcommand)
 int32_t command_execute(cli_handler_t *handler, const char*subcommand, int32_t argc, char **argv)
 {
     command_t *cmd = command_find(subcommand);
+    LOG_DEBUG("command find %s %p", subcommand, cmd);
     if (cmd) {
         cmd->handler((void *)&handler->cdp, argc, argv);
     }

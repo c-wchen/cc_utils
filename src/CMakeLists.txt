@@ -18,7 +18,7 @@ endif()
 
 if (ENABLE_ASAN)
     message("ENABLE_ASAN ON")
-    add_link_options("-fsanitize=address")
+    add_link_options("-fsanitize=address") # prepare: dnf|yum install libasan
 endif()
 
 add_subdirectory(cli)

@@ -14,6 +14,11 @@ int32_t cli_destroy();
 int32_t cli_register(const char *sub_command, const char *help, void (*handler)(void *cdp, int32_t argc, char** argv));
 
 
+void cdp_print(void *cdp, const char *fmt, ...);
+
+#define CMD_PRINT(cdp, fmt, ...) cdp_print(cdp, fmt, ##__VA_ARGS__)
+#define CMD_PRINTLN(cdp, fmt, ...) cdp_print(cdp, fmt "\n", ##__VA_ARGS__)
+
 #ifdef __cplusplus /* CLI_H */
 }
 #endif

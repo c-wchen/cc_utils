@@ -1,6 +1,7 @@
 project(wcli)
 set(SERVER_LIST
     cli_server.c
+    options.c
 )
 SET(CLIENT_LIST
     cli_client.c
