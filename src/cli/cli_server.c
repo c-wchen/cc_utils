@@ -62,6 +62,8 @@ typedef struct command {
     void (*execute)(void *cdp, int32_t argc, char **argv);
 } command_t;
 
+command_t commands[1024] = {0};
+
 void cdp_init(cmdprint_t *cdp);
 void cdp_reinit(cmdprint_t *cdp);
 void cdp_destroy(cmdprint_t *cdp);
@@ -81,7 +83,16 @@ void cmd_test(void *cdp, int32_t argc, char **argv)
     return;
 }
 
-command_t commands[1024] = {0};
+void cmd_help(void *cdp, int32_t argc, char **argv)
+{
+    CMD_PRINTLN(cdp, "register subcomand:");
+    for (int32_t i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
+        if (commands[i].execute != NULL) {
+            CMD_PRINTLN(cdp, "  %s\t%s", commands[i].subcommand, commands[i].help);
+        }
+    }
+    return;
+}
 
 void remove_all_cleanup_files()
 {
@@ -172,6 +183,7 @@ int cli_create(const char *name)
     atexit(remove_all_cleanup_files);
     signal(SIGINT, common_signal);
 
+    cli_register("help", "help for subcommand details", cmd_help);
     cli_register("test", "test command", cmd_test);
     return 0;
 }
