@@ -546,7 +546,7 @@ void cdp_print(void *out_hdl, const char *fmt, ...)
 
     memcpy(cdp->buf + cdp->pos, buffer, off);
     cdp->pos += off;
-    *(cdp->buf + cdp->pos + 1) = '\0';
+    *(cdp->buf + cdp->pos) = '\0';
     pthread_mutex_unlock(&cdp->mutex);
     return;
 }

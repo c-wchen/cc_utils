@@ -19,9 +19,13 @@ static void cmd_student(void *cdp, int32_t argc, char** argv)
         OPT_STRING32('n', "name", &s.name, "student name"),
         OPT_INT('a', "age", &s.age, "student age"),
         OPT_INT('s', "sex", &s.sex, "student sex"),
-        OPT_DOUBLE('S', "score", &s.age, "student score")
+        OPT_DOUBLE('S', "score", &s.score, "student score")
     };
-    parse_options(argc, argv, copts, 4);
+    int ret = parse_options(argc, argv, copts, 4);
+
+    if (ret != 0) {
+        return;
+    }
 
     CMD_PRINT(cdp, "==> name: %s\n", s.name);
     CMD_PRINT(cdp, "==> age: %d\n", s.age);

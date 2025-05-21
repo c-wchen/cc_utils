@@ -34,18 +34,18 @@ int parse_options(int32_t argc, char *argv[], const struct cli_option *copts, in
     char *optstring = (char *)calloc(sizeof(char), (optnum + 1) * 3 + 1);
     int32_t optstring_idx = 0;
 
-    // longopts[0].name = "help";
-    // longopts[0].val = 'h';
-    // longopts[0].has_arg = no_argument;
-    // longopts[0].flag = NULL;
-    // optstring[optstring_idx++] = 'h';
+    longopts[0].name = "help";
+    longopts[0].val = 'h';
+    longopts[0].has_arg = no_argument;
+    longopts[0].flag = NULL;
+    optstring[optstring_idx++] = 'h';
     
 
     for (int i = 0; i < optnum; i++) {
-        // longopts[i].name = copts[i].long_name;
-        // longopts[i].val = copts[i].short_name;
-        // longopts[i].has_arg = copts[i].flag;
-        // longopts[i].flag = NULL;
+        longopts[i + 1].name = copts[i].long_name;
+        longopts[i + 1].val = copts[i].short_name;
+        longopts[i + 1].has_arg = copts[i].flag;
+        longopts[i + 1].flag = NULL;
 
         switch (copts[i].flag) {
             case no_argument: {
@@ -66,17 +66,22 @@ int parse_options(int32_t argc, char *argv[], const struct cli_option *copts, in
         }
     }
 
+    char **new_argv = (char **)calloc(sizeof(char **), argc + 1);
+    new_argv[0] = "temp";
+    for (int i = 0; i < argc; i++) {
+        new_argv[i + 1] = argv[i];
+    }
     
 
     int option_index = 0;
     int c;
     int ret = 0;
-    while ((c = getopt(argc, argv, optstring)) != -1) {
-        // if (c == 'h') {
-        //     print_help(copts, optnum);
-        //     ret = -EINVAL;
-        //     break;
-        // }
+    while ((c = getopt_long(argc + 1, new_argv, optstring, longopts, &option_index)) != -1) {
+        if (c == 'h') {
+            print_help(copts, optnum);
+            ret = -EINVAL;
+            break;
+        }
         printf("c = %c   optarg = %s\n", c, optarg);
         struct cli_option *opt = find_option(copts, optnum, c);
         if (opt == NULL) {
@@ -106,6 +111,10 @@ int parse_options(int32_t argc, char *argv[], const struct cli_option *copts, in
             }
         }
     }
+
+    free(new_argv);
+    free(optstring);
+    free(longopts);
     
     return ret;
 }
