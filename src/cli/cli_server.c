@@ -184,7 +184,7 @@ int cli_create(const char *name)
     signal(SIGINT, common_signal);
 
     cli_register("help", "help for subcommand details", cmd_help);
-    cli_register("test", "test command", cmd_test);
+    cli_register("test", "test command input arguments", cmd_test);
     return 0;
 }
 
