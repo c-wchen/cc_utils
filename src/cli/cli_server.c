@@ -28,7 +28,12 @@
 #define LOG_ERROR(fmt, ...)   printf("[ERROR] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
 #define LOG_INFO(fmt, ...)    printf("[INFO] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
 #define LOG_WARN(fmt, ...)    printf("[WARN] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
-#define LOG_DEBUG(fmt, ...)   printf("[DEBUG] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
+
+#ifdef __DEBUG__
+    #define LOG_DEBUG(fmt, ...)   printf("[DEBUG] " fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
+#else
+    #define LOG_DEBUG(fmt, ...)
+#endif
 
 enum {
     CLI_INIT,
@@ -58,7 +63,7 @@ typedef struct cli_handler {
 typedef struct command {
     const char *subcommand; /* TODO: subbcommand、help改成字符串数组 */
     const char *help;
-    void (*handler)(void *cdp, int32_t argc, char **argv);
+    void (*execute)(void *cdp, int32_t argc, char **argv);
 } command_t;
 
 void cdp_init(cmdprint_t *cdp);
@@ -139,6 +144,7 @@ int cli_create(const char *name)
         free(inst);
         return ret;
     }
+
     LOG_DEBUG("bind and listen success.");
 
     ret = pthread_spin_init(&inst->spin, PTHREAD_PROCESS_PRIVATE);
@@ -199,7 +205,7 @@ int cli_destroy()
     return 0;
 }
 
-int32_t cli_register(const char *sub_command, const char *help, void (*handler)(void *cdp, int32_t argc, char** argv))
+int32_t cli_register(const char *sub_command, const char *help, void (*execute)(void *cdp, int32_t argc, char** argv))
 {
     static int regcnt = 0;
     pthread_spin_lock(&command_handler->spin);
@@ -210,10 +216,10 @@ int32_t cli_register(const char *sub_command, const char *help, void (*handler)(
         return -ENOSPC;
     }
     for (int i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
-        if (commands[i].handler == NULL) {
+        if (commands[i].execute == NULL) {
             commands[i].subcommand = sub_command;
             commands[i].help = help;
-            commands[i].handler = handler;
+            commands[i].execute = execute;
             break;
         }
     }
@@ -350,7 +356,6 @@ int safe_write(int fd, const void *buf, signed int len)
 
 uint32_t msg_encode(char *buf, char *sub_command, int32_t argc, char **argv)
 {
-    LOG_DEBUG("subcommand: %s, argc: %d", sub_command, argc);
     size_t offset = 0;
     *(uint32_t *)buf = strlen(sub_command) + 1;
     offset += 4;
@@ -363,8 +368,9 @@ uint32_t msg_encode(char *buf, char *sub_command, int32_t argc, char **argv)
         offset += 4;
         offset += sprintf(buf + offset, "%s", argv[i]) + 1;
     }
-    *(buf + offset) = '\n'; /* \n terminated string */
-    return offset + 1;
+    *(buf + offset++) = '\r'; /* \n\r terminated string */
+    *(buf + offset++) = '\n';
+    return offset;
 }
 
 
@@ -417,7 +423,7 @@ int32_t command_execute(cli_handler_t *handler, const char*subcommand, int32_t a
     command_t *cmd = command_find(subcommand);
     LOG_DEBUG("command find %s %p", subcommand, cmd);
     if (cmd) {
-        cmd->handler((void *)&handler->cdp, argc, argv);
+        cmd->execute((void *)&handler->cdp, argc, argv);
     }
     return 0;
 }
@@ -446,8 +452,8 @@ void do_accept(cli_handler_t *handler, int32_t socket_fd)
             close(connection_fd);
             return;
         }
-        // new protocol: \n terminated string
-        if (cmd[pos] == '\n') {
+        // new protocol: \r\n terminated string
+        if (pos > 0 && cmd[pos] == '\n' && cmd[pos - 1] == '\r') {
             break;
         }
         if (++pos >= sizeof(cmd)) {

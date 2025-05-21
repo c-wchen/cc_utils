@@ -8,13 +8,13 @@
 #include <errno.h>
 #include <assert.h>
 
-#include<sys/types.h>
+#include <sys/types.h>
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <sys/stat.h>
 #include <poll.h>
-#include<dirent.h>
+#include <dirent.h>
 
 #include "cli_internal.h"
 
@@ -124,7 +124,6 @@ int main(int argc, char **argv)
         close(sock_fd);
         return 1;
     }
-    PRINTLN("reply mesage:");
 
     struct timeval timeout = {.tv_sec = COMMAND_TIMEOUT, .tv_usec = 0};
     fd_set rfds;

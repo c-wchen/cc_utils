@@ -2,17 +2,19 @@
 #include <stdlib.h>    /* for exit */
 #include <getopt.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #include <string.h>
 
+#include "cli/cli.h"
 #include "cli/options.h"
 
 
-void print_help(const struct cli_option *copts, int32_t optnum)
+void print_help(void *cdp, const struct cli_option *copts, int32_t optnum)
 {
-    printf("help: \n");
+    CMD_PRINTLN(cdp, "help:");
     for (int i = 0; i < optnum; i++) {
-       printf("    -%c, --%s\t%s\n", copts[i].short_name, copts[i].long_name, copts[i].help);
+       CMD_PRINTLN(cdp, "    -%c, --%s\t%s", copts[i].short_name, copts[i].long_name, copts[i].help);
     }
 }
 
@@ -27,7 +29,7 @@ struct cli_option *find_option(struct cli_option *copts, int32_t optnum, int c)
     return NULL;
 }
 
-int parse_options(int32_t argc, char *argv[], const struct cli_option *copts, int32_t optnum)
+int parse_options(void *cdp, int32_t argc, char *argv[], const struct cli_option *copts, int32_t optnum)
 {
     optind = 1;
     struct option *longopts = (struct option *)calloc(sizeof(struct option), optnum + 2);
@@ -78,19 +80,26 @@ int parse_options(int32_t argc, char *argv[], const struct cli_option *copts, in
     int ret = 0;
     while ((c = getopt_long(argc + 1, new_argv, optstring, longopts, &option_index)) != -1) {
         if (c == 'h') {
-            print_help(copts, optnum);
+            print_help(cdp, copts, optnum);
             ret = -EINVAL;
             break;
         }
-        printf("c = %c   optarg = %s\n", c, optarg);
         struct cli_option *opt = find_option(copts, optnum, c);
         if (opt == NULL) {
             continue;
         }
         void *value = opt->value;
         switch (opt->type) {
-            case OPTION_INTEGER: {
-                *(uint64_t *)value = strtol(optarg, NULL, 10);
+            case OPTION_INT: {
+                *(int32_t *)value = strtol(optarg, NULL, 10);
+                break;
+            }
+            case OPTION_LONG: {
+                *(int64_t *)value = strtol(optarg, NULL, 10);
+                break;
+            }
+            case OPTION_BOOL: {
+                *(bool *)value = true;
                 break;
             }
             case OPTION_DOUBLE: {
