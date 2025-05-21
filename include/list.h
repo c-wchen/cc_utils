@@ -1,37 +1,30 @@
 
-#ifndef _LIST_H_
-#define _LIST_H_
+#ifndef LIST_H
+#define LIST_H
 #include <stdbool.h>
 #include <stddef.h>
-#ifndef _PTHREAD_H
 #include <pthread.h>
-#endif
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-#ifndef container_of
-#define container_of(ptr, type, member) ({                \
-    const typeof( ((type *)0)->member ) *__mptr = (ptr);  \
-    (type *)( (char *)__mptr - offsetof(type,member) );})
-#endif
-
+#define container_of(ptr, type, member) ({                      \
+    const typeof( ((type *)0)->member ) *__mptr = (ptr);        \
+    (type *)( (char *)__mptr - offsetof(type,member) );         \
+})
 
 /* sl_list */
 
-typedef struct sl_head
-{
-    sl_node_t *first;
-} sl_head_t;
-
-typedef struct sl_node
-{
+typedef struct sl_node {
     struct sl_node *next;
 } sl_node_t;
 
-#define SL_ENTRY(ptr, type, member) (container_of(ptr, type, member))
+typedef struct sl_head {
+    sl_node_t *first;
+} sl_head_t;
 
+
+#define SL_ENTRY(ptr, type, member) (container_of(ptr, type, member))
 
 static inline void sl_init(sl_head_t *list);
 static inline void sl_init_node(sl_node_t *node);
@@ -45,7 +38,6 @@ static inline sl_node_t *sl_del_head(sl_head_t *list);
 static inline void sl_del(sl_head_t *list, const sl_node_t *node);
 static inline void sl_append(sl_head_t *dest_list, sl_head_t *src_list);
 static inline void sl_free_all(sl_head_t *list, void (*free_node)(void *));
-
 
 static inline void sl_init(sl_head_t *list)
 {
@@ -84,8 +76,7 @@ static inline void sl_add_head(sl_head_t *list, sl_node_t *node)
 static inline sl_node_t *sl_del_head(sl_head_t *list)
 {
     sl_node_t *node = list->first;
-    if (NULL != node)
-    {
+    if (NULL != node) {
         list->first = node->next;
     }
     return node;
@@ -93,12 +84,9 @@ static inline sl_node_t *sl_del_head(sl_head_t *list)
 
 static inline void sl_add_after(sl_head_t *list, sl_node_t *prev, sl_node_t *insert)
 {
-    if (NULL == prev)
-    {
+    if (NULL == prev) {
         sl_add_head(list, insert);
-    }
-    else
-    {
+    } else {
         insert->next = prev->next;
         prev->next = insert;
     }
@@ -108,15 +96,11 @@ static inline void sl_add_after(sl_head_t *list, sl_node_t *prev, sl_node_t *ins
 static inline sl_node_t *sl_del_after(sl_head_t *list, sl_node_t *prev)
 {
     sl_node_t *node;
-    if (NULL == prev)
-    {
+    if (NULL == prev) {
         node = sl_del_head(list);
-    }
-    else
-    {
+    } else {
         node = prev->next;
-        if (NULL != node)
-        {
+        if (NULL != node) {
             prev->next = node->next;
         }
     }
@@ -161,10 +145,8 @@ static inline sl_node_t *sl_del_after(sl_head_t *list, sl_node_t *prev)
 static inline void sl_del(sl_head_t *list, const sl_node_t *node)
 {
     sl_node_t *pstCur, *prev;
-    SL_FOREACH_PREVPTR(list, pstCur, prev)
-    {
-        if (pstCur == node)
-        {
+    SL_FOREACH_PREVPTR(list, pstCur, prev) {
+        if (pstCur == node) {
             (void)sl_del_after(list, prev);
             break;
         }
@@ -175,18 +157,13 @@ static inline void sl_del(sl_head_t *list, const sl_node_t *node)
 static inline void sl_append(sl_head_t *dest_list, sl_head_t *src_list)
 {
     sl_node_t *node, *prev;
-    if (true != sl_is_empty(src_list))
-    {
-        SL_FOREACH_PREVPTR(dest_list, node, prev)
-        {
+    if (true != sl_is_empty(src_list)) {
+        SL_FOREACH_PREVPTR(dest_list, node, prev) {
             ;
         }
-        if (NULL == prev)
-        {
+        if (NULL == prev) {
             dest_list->first = sl_first(src_list);
-        }
-        else
-        {
+        } else {
             prev->next = sl_first(src_list);
         }
         sl_init(src_list);
@@ -197,8 +174,7 @@ static inline void sl_free_all(sl_head_t *list, void (*free_node)(void *))
 {
     sl_node_t *pstCurNode = NULL;
     sl_node_t *nextNode = NULL;
-    SL_FOREACH_SAFE(list, pstCurNode, nextNode)
-    {
+    SL_FOREACH_SAFE(list, pstCurNode, nextNode) {
         free_node(pstCurNode);
     }
     sl_init(list);
@@ -206,20 +182,16 @@ static inline void sl_free_all(sl_head_t *list, void (*free_node)(void *))
 }
 
 /* stq_list */
+typedef struct stq_node {
+    struct stq_node *next;
+} stq_node_t;
 
-typedef struct stq_head
-{
+typedef struct stq_head {
     stq_node_t *first;
     stq_node_t *last;
 } stq_head_t;
 
-typedef struct stq_node
-{
-    struct stq_node *next;
-} stq_node_t;
-
 #define STQ_ENTRY(ptr, type, member) (container_of(ptr, type, member))
-
 
 static inline void stq_init(stq_head_t *list);
 static inline void stq_init_node(stq_node_t *node);
@@ -270,8 +242,7 @@ static inline void stq_add_head(stq_head_t *list, stq_node_t *node)
 {
     node->next = list->first;
     list->first = node;
-    if (NULL == list->last)
-    {
+    if (NULL == list->last) {
         list->last = node;
     }
     return;
@@ -279,12 +250,10 @@ static inline void stq_add_head(stq_head_t *list, stq_node_t *node)
 static inline stq_node_t *stq_del_head(stq_head_t *list)
 {
     stq_node_t *node = list->first;
-    if (NULL != node)
-    {
+    if (NULL != node) {
         list->first = node->next;
     }
-    if (NULL == list->first)
-    {
+    if (NULL == list->first) {
         list->last = (stq_node_t *)NULL;
     }
     return node;
@@ -292,13 +261,10 @@ static inline stq_node_t *stq_del_head(stq_head_t *list)
 static inline void stq_add_tail(stq_head_t *list, stq_node_t *node)
 {
     node->next = (stq_node_t *)NULL;
-    if (NULL != list->last)
-    {
+    if (NULL != list->last) {
         list->last->next = node;
         list->last = node;
-    }
-    else
-    {
+    } else {
         list->last = node;
         list->first = node;
     }
@@ -308,16 +274,12 @@ static inline void stq_add_after(stq_head_t *list,
                                  stq_node_t *prev,
                                  stq_node_t *insert)
 {
-    if (NULL == prev)
-    {
+    if (NULL == prev) {
         stq_add_head(list, insert);
-    }
-    else
-    {
+    } else {
         insert->next = prev->next;
         prev->next = insert;
-        if (list->last == prev)
-        {
+        if (list->last == prev) {
             list->last = insert;
         }
     }
@@ -327,71 +289,18 @@ static inline stq_node_t *stq_del_after(stq_head_t *list,
                                         stq_node_t *prev)
 {
     stq_node_t *node;
-    if (NULL == prev)
-    {
+    if (NULL == prev) {
         node = stq_del_head(list);
-    }
-    else
-    {
+    } else {
         node = prev->next;
-        if (NULL != node)
-        {
+        if (NULL != node) {
             prev->next = node->next;
         }
-        if (list->last == node)
-        {
+        if (list->last == node) {
             list->last = prev;
         }
     }
     return node;
-}
-
-static inline void stq_del(stq_head_t *list, const stq_node_t *node)
-{
-    stq_node_t *pstCur, *prev;
-    STQ_FOREACH_PREVPTR(list, pstCur, prev)
-    {
-        if (pstCur == node)
-        {
-            (void)stq_del_after(list, prev);
-            break;
-        }
-    }
-    return;
-}
-static inline void stq_append(stq_head_t *dest_list, stq_head_t *src_list)
-{
-    stq_node_t *node, *prev;
-    if (true != stq_is_empty(src_list))
-    {
-        STQ_FOREACH_PREVPTR(dest_list, node, prev)
-        {
-            ;
-        }
-        if (NULL == prev)
-        {
-            dest_list->first = stq_first(src_list);
-            dest_list->last = stq_last(src_list);
-        }
-        else
-        {
-            prev->next = stq_first(src_list);
-            dest_list->last = stq_last(src_list);
-        }
-        stq_init(src_list);
-    }
-    return;
-}
-static inline void stq_free_all(stq_head_t *list, void (*free_node)(void *))
-{
-    stq_node_t *pstCurNode = NULL;
-    stq_node_t *nextNode = NULL;
-    STQ_FOREACH_SAFE(list, pstCurNode, nextNode)
-    {
-        free_node(pstCurNode);
-    }
-    stq_init(list);
-    return;
 }
 
 #define STQ_FOREACH(list, node) \
@@ -430,26 +339,63 @@ static inline void stq_free_all(stq_head_t *list, void (*free_node)(void *))
          (void)({(prev_entry) = (entry); \
                   (entry) = STQ_ENTRY_NEXT(entry, member);}))
 
-
+                  
+static inline void stq_del(stq_head_t *list, const stq_node_t *node)
+{
+    stq_node_t *cur, *prev;
+    STQ_FOREACH_PREVPTR(list, cur, prev) {
+        if (cur == node) {
+            (void)stq_del_after(list, prev);
+            break;
+        }
+    }
+    return;
+}
+static inline void stq_append(stq_head_t *dest_list, stq_head_t *src_list)
+{
+    stq_node_t *node, *prev;
+    if (true != stq_is_empty(src_list)) {
+        STQ_FOREACH_PREVPTR(dest_list, node, prev) {
+            ;
+        }
+        if (NULL == prev) {
+            dest_list->first = stq_first(src_list);
+            dest_list->last = stq_last(src_list);
+        } else {
+            prev->next = stq_first(src_list);
+            dest_list->last = stq_last(src_list);
+        }
+        stq_init(src_list);
+    }
+    return;
+}
+static inline void stq_free_all(stq_head_t *list, void (*free_node)(void *))
+{
+    stq_node_t *pstCurNode = NULL;
+    stq_node_t *nextNode = NULL;
+    STQ_FOREACH_SAFE(list, pstCurNode, nextNode) {
+        free_node(pstCurNode);
+    }
+    stq_init(list);
+    return;
+}
 
 
 /* dl_list */
 
-typedef struct dl_head
-{
+typedef struct dl_node {
+    struct dl_node *next;
+    struct dl_node **prev;
+} dl_node_t;
+
+typedef struct dl_head {
     dl_node_t *first;
 } dl_head_t;
 
-typedef struct dl_node
-{
-    struct dl_node *next;
-    struct dl_node *prev;
-} dl_node_t;
-#define DL_ENTRY(ptr, type, member) (container_of(ptr, type, member))
-#define DL_NODE_FROM_PPRE(Prev) (container_of((Prev), struct dl_node, next))
-#define DL_ENTRY_FROM_PPRE(Prev, type, member) DL_ENTRY(DL_NODE_FROM_PPRE(Prev), type, member)
+#define DL_ENTRY(ptr, type, member) container_of(ptr, type, member)
+#define DL_NODE_FROM_PPRE(prev) container_of((prev), struct dl_node, next)
+#define DL_ENTRY_FROM_PPRE(prev, type, member) DL_ENTRY(DL_NODE_FROM_PPRE(prev), type, member)
 
-  
 static inline void dl_init(dl_head_t *list);
 static inline void dl_init_node(dl_node_t *node);
 static inline bool dl_is_empty(const dl_head_t *list);
@@ -466,8 +412,6 @@ static inline void dl_del_and_init_node(dl_node_t *node);
 static inline dl_node_t *dl_del_head_and_init_node(const dl_head_t *list);
 static inline dl_node_t *dl_del_head(const dl_head_t *list);
 static inline void dl_free_all(dl_head_t *list, void (*free_node)(void *));
-
-
 
 static inline void dl_init(dl_head_t *list)
 {
@@ -498,12 +442,10 @@ static inline dl_node_t *dl_prev(const dl_node_t *node)
 }
 static inline void dl_del(dl_node_t *node)
 {
-    if (NULL != node->prev)
-    {
+    if (NULL != node->prev) {
         *node->prev = node->next;
     }
-    if (NULL != node->next)
-    {
+    if (NULL != node->next) {
         node->next->prev = node->prev;
     }
     return;
@@ -516,12 +458,9 @@ static inline void dl_del_and_init_node(dl_node_t *node)
 static inline dl_node_t *dl_del_head_and_init_node(const dl_head_t *list)
 {
     dl_node_t *node = dl_first(list);
-    if (dl_next(node) == NULL)
-    {
+    if (dl_next(node) == NULL) {
         node = (dl_node_t *)NULL;
-    }
-    else
-    {
+    } else {
         dl_del_and_init_node(node);
     }
     return node;
@@ -530,8 +469,7 @@ static inline void dl_add_head(dl_head_t *list, dl_node_t *node)
 {
     node->prev = &list->first;
     node->next = list->first;
-    if (NULL != node->next)
-    {
+    if (NULL != node->next) {
         node->next->prev = &node->next;
     }
     list->first = node;
@@ -540,8 +478,7 @@ static inline void dl_add_head(dl_head_t *list, dl_node_t *node)
 static inline dl_node_t *dl_del_head(const dl_head_t *list)
 {
     dl_node_t *node = dl_first(list);
-    if (NULL != node)
-    {
+    if (NULL != node) {
         dl_del(node);
     }
     return node;
@@ -551,8 +488,7 @@ static inline void dl_add_after(dl_node_t *prev, dl_node_t *insert)
     insert->prev = &prev->next;
     insert->next = prev->next;
     prev->next = insert;
-    if (NULL != insert->next)
-    {
+    if (NULL != insert->next) {
         insert->next->prev = &insert->next;
     }
     return;
@@ -562,8 +498,7 @@ static inline void dl_add_after_prevptr(dl_node_t **prev, dl_node_t *insert)
     insert->prev = *prev;
     insert->next = *prev;
     *prev = insert;
-    if (NULL != insert->next)
-    {
+    if (NULL != insert->next) {
         insert->next->prev = &insert->next;
     }
     return;
@@ -572,8 +507,7 @@ static inline void dl_add_before(dl_node_t *next, dl_node_t *insert)
 {
     insert->prev = next->prev;
     insert->next = next;
-    if (NULL != insert->prev)
-    {
+    if (NULL != insert->prev) {
         *insert->prev = insert;
     }
     insert->next->prev = &insert->next;
@@ -621,10 +555,8 @@ static inline void dl_add_before(dl_node_t *next, dl_node_t *insert)
 static inline void dl_append(dl_head_t *dest_list, dl_head_t *src_list)
 {
     dl_node_t *node, **prev;
-    if (true != dl_is_empty(src_list))
-    {
-        DL_FOREACH_PREVPTR(dest_list, node, prev)
-        {
+    if (true != dl_is_empty(src_list)) {
+        DL_FOREACH_PREVPTR(dest_list, node, prev) {
             ;
         }
         *prev = src_list->first;
@@ -637,28 +569,23 @@ static inline void dl_free_all(dl_head_t *list, void (*free_node)(void *))
 {
     dl_node_t *pstCurNode = NULL;
     dl_node_t *nextNode = NULL;
-    DL_FOREACH_SAFE(list, pstCurNode, nextNode)
-    {
+    DL_FOREACH_SAFE(list, pstCurNode, nextNode) {
         free_node(pstCurNode);
     }
     dl_init(list);
     return;
 }
 
-
 /* dtq list */
 
-typedef struct dtq_node
-{
+typedef struct dtq_node {
     struct dtq_node *prev;
     struct dtq_node *next;
 } dtq_node_t;
 #define DTQ_ENTRY(ptr, type, member) (container_of(ptr, type, member))
-typedef struct dtq_head
-{
+typedef struct dtq_head {
     dtq_node_t head;
 } dtq_head_t;
-
 
 static inline void dtq_init(dtq_head_t *list);
 static inline void dtq_init_node(dtq_node_t *node);
@@ -678,7 +605,6 @@ static inline dtq_node_t *dtq_del_tail(const dtq_head_t *list);
 static inline void dtq_append(dtq_head_t *dest_list, dtq_head_t *src_list);
 static inline void dtq_free_all(dtq_head_t *list, void (*free_node)(void *));
 
-
 static inline void dtq_add_head(dtq_head_t *list, dtq_node_t *node)
 {
     dtq_add_after(&list->head, node);
@@ -687,12 +613,9 @@ static inline void dtq_add_head(dtq_head_t *list, dtq_node_t *node)
 static inline dtq_node_t *dta_del_head(const dtq_head_t *list)
 {
     dtq_node_t *node = dtq_first(list);
-    if (dtq_is_end(list, node))
-    {
+    if (dtq_is_end(list, node)) {
         node = (dtq_node_t *)NULL;
-    }
-    else
-    {
+    } else {
         dtq_del(node);
     }
     return node;
@@ -705,12 +628,9 @@ static inline void dtq_add_tail(dtq_head_t *list, dtq_node_t *node)
 static inline dtq_node_t *dtq_del_tail(const dtq_head_t *list)
 {
     dtq_node_t *node = dtq_last(list);
-    if (dtq_is_end(list, node))
-    {
+    if (dtq_is_end(list, node)) {
         node = (dtq_node_t *)NULL;
-    }
-    else
-    {
+    } else {
         dtq_del(node);
     }
     return node;
@@ -721,8 +641,7 @@ static inline bool dtq_node_is_linked(dtq_node_t *node)
 }
 static inline void dtq_del_and_init_node(dtq_node_t *node)
 {
-    if (dtq_node_is_linked(node))
-    {
+    if (dtq_node_is_linked(node)) {
         dtq_del(node);
     }
     dtq_init_node(node);
@@ -730,20 +649,16 @@ static inline void dtq_del_and_init_node(dtq_node_t *node)
 static inline dtq_node_t *dtq_del_head_and_init_node(const dtq_head_t *list)
 {
     dtq_node_t *node = dtq_first(list);
-    if (dtq_is_end(list, node))
-    {
+    if (dtq_is_end(list, node)) {
         node = (dtq_node_t *)NULL;
-    }
-    else
-    {
+    } else {
         dtq_del_and_init_node(node);
     }
     return node;
 }
 static inline void dtq_move_and_add_tail(dtq_head_t *head, dtq_node_t *node)
 {
-    if (dtq_node_is_linked(node))
-    {
+    if (dtq_node_is_linked(node)) {
         dtq_del(node);
     }
     dtq_add_tail(head, node);
@@ -809,8 +724,7 @@ static inline bool dtq_is_empty(const dtq_head_t *list)
 static inline dtq_node_t *dtq_first(const dtq_head_t *list)
 {
     dtq_node_t *node = list->head.next;
-    if (node == &list->head)
-    {
+    if (node == &list->head) {
         return NULL;
     }
     return node;
@@ -818,20 +732,17 @@ static inline dtq_node_t *dtq_first(const dtq_head_t *list)
 static inline dtq_node_t *dtq_last(const dtq_head_t *list)
 {
     dtq_node_t *node = list->head.prev;
-    if (node == &list->head)
-    {
+    if (node == &list->head) {
         return NULL;
     }
     return node;
 }
 static inline bool dtq_is_end(const dtq_head_t *list, const dtq_node_t *node)
 {
-    if (dtq_is_empty(list))
-    {
+    if (dtq_is_empty(list)) {
         return true;
     }
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return true;
     }
     return (node == &list->head);
@@ -868,8 +779,7 @@ static inline void dtq_del(const dtq_node_t *node)
 }
 static inline void dtq_append(dtq_head_t *dest_list, dtq_head_t *src_list)
 {
-    if (true != dtq_is_empty(src_list))
-    {
+    if (true != dtq_is_empty(src_list)) {
         src_list->head.next->prev = dest_list->head.prev;
         src_list->head.prev->next = dest_list->head.prev->next;
         dest_list->head.prev->next = src_list->head.next;
@@ -882,8 +792,7 @@ static inline void dtq_free_all(dtq_head_t *list, void (*free_node)(void *))
 {
     dtq_node_t *pstCurNode = NULL;
     dtq_node_t *nextNode = NULL;
-    DTQ_FOREACH_SAFE(list, pstCurNode, nextNode)
-    {
+    DTQ_FOREACH_SAFE(list, pstCurNode, nextNode) {
         free_node(pstCurNode);
     }
     dtq_init(list);
@@ -892,14 +801,11 @@ static inline void dtq_free_all(dtq_head_t *list, void (*free_node)(void *))
 
 /* rwstq list */
 
-typedef struct rwstq_head
-{
+typedef struct rwstq_head {
     stq_head_t head;
     pthread_rwlock_t rwlock;
 } rwstq_head_t;
 
-c
-  
 static inline void rwstq_read_lock(rwstq_head_t *node);
 static inline bool rwstq_read_trylock(rwstq_head_t *node);
 static inline void rwstq_read_unlock(rwstq_head_t *node);
@@ -1001,11 +907,10 @@ static inline void rwstq_free_all(rwstq_head_t *list, void (*free_node)(void *))
 
 /* rwdtq list */
 
-typedef rwdtq_head {
+typedef struct rwdtq_head {
     dtq_head_t head;
     pthread_rwlock_t rwlock;
 } rwdtq_head_t;
-
 
 static inline void rwdtq_read_lock(rwdtq_head_t *node);
 static inline bool rwdtq_read_trylock(rwdtq_head_t *node);
@@ -1016,14 +921,13 @@ static inline void rwdtq_write_unlock(rwdtq_head_t *node);
 static inline void rwdtq_deinit(rwdtq_head_t *node);
 static inline void rwdtq_init(rwdtq_head_t *list);
 static inline bool rwdtq_is_empty(rwdtq_head_t *list);
-static inline bool rwdtq_is_end(rwdtq_head_t *list);
+static inline bool rwdtq_is_end(rwdtq_head_t *list, const dtq_node_t *node);
 static inline void rwdtq_add_head(rwdtq_head_t *list, dtq_node_t *node);
 static inline dtq_node_t *rwdtq_del_head(rwdtq_head_t *list);
 static inline void rwdtq_add_tail(rwdtq_head_t *list, dtq_node_t *node);
 static inline void rwdtq_del(rwdtq_head_t *list, const dtq_node_t *node);
 static inline void rwdtq_free_all(rwdtq_head_t *list, void (*free_node)(void *));
 
-
 static inline void rwdtq_write_lock(rwdtq_head_t *node)
 {
     (void)pthread_rwlock_wrlock(&node->rwlock);
@@ -1038,6 +942,19 @@ static inline void rwdtq_write_unlock(rwdtq_head_t *node)
     (void)pthread_rwlock_unlock(&node->rwlock);
     return;
 }
+
+static inline void rwdtq_read_lock(rwdtq_head_t *node)
+{
+    (void)pthread_rwlock_rdlock(&node->rwlock);
+    return;
+}
+
+static inline void rwdtq_read_unlock(rwdtq_head_t *node)
+{
+    (void)pthread_rwlock_unlock(&node->rwlock);
+    return;
+}
+
 static inline void rwdtq_deinit(rwdtq_head_t *node)
 {
     (void)pthread_rwlock_destroy(&node->rwlock);
@@ -1111,96 +1028,9 @@ static inline void rwdtq_free_all(rwdtq_head_t *list, void (*free_node)(void *))
     return;
 }
 
-
-static inline void rwdtq_write_lock(rwdtq_head_t *node)
-{
-    (void)pthread_rwlock_wrlock(&node->rwlock);
-    return;
-}
-static inline bool rwdtq_write_trylock(rwdtq_head_t *node)
-{
-    return (0 == pthread_rwlock_trywrlock(&node->rwlock));
-}
-static inline void rwdtq_write_unlock(rwdtq_head_t *node)
-{
-    (void)pthread_rwlock_unlock(&node->rwlock);
-    return;
-}
-static inline void rwdtq_deinit(rwdtq_head_t *node)
-{
-    (void)pthread_rwlock_destroy(&node->rwlock);
-    return;
-}
-static inline void rwdtq_init(rwdtq_head_t *list)
-{
-    dtq_init(&list->head);
-    (void)pthread_rwlock_init(&list->rwlock, NULL);
-    return;
-}
-static inline bool rwdtq_is_empty(rwdtq_head_t *list)
-{
-    bool is_empty;
-    rwdtq_read_lock(list);
-    is_empty = dtq_is_empty(&list->head);
-    rwdtq_read_unlock(list);
-    return is_empty;
-}
-static inline bool rwdtq_is_end(rwdtq_head_t *list, const dtq_node_t *node)
-{
-    bool is_empty;
-    rwdtq_read_lock(list);
-    is_empty = dtq_is_end(&list->head, node);
-    rwdtq_read_unlock(list);
-    return is_empty;
-}
-static inline void rwdtq_add_head(rwdtq_head_t *list, dtq_node_t *node)
-{
-    rwdtq_write_lock(list);
-    dtq_add_head(&list->head, node);
-    rwdtq_write_unlock(list);
-    return;
-}
-static inline dtq_node_t *rwdta_del_head(rwdtq_head_t *list)
-{
-    dtq_node_t *node = NULL;
-    rwdtq_write_lock(list);
-    node = dta_del_head(&list->head);
-    rwdtq_write_unlock(list);
-    return node;
-}
-static inline void rwdtq_del(rwdtq_head_t *list, const dtq_node_t *node)
-{
-    rwdtq_write_lock(list);
-    node->prev->next = node->next;
-    node->next->prev = node->prev;
-    rwdtq_write_unlock(list);
-    return;
-}
-static inline void rwdtq_add_tail(rwdtq_head_t *list, dtq_node_t *node)
-{
-    rwdtq_write_lock(list);
-    dtq_add_tail(&list->head, node);
-    rwdtq_write_unlock(list);
-    return;
-}
-static inline dtq_node_t *rwdtq_del_tail(rwdtq_head_t *list)
-{
-    dtq_node_t *node = NULL;
-    rwdtq_write_lock(list);
-    node = dtq_del_tail(&list->head);
-    rwdtq_write_unlock(list);
-    return node;
-}
-static inline void rwdtq_free_all(rwdtq_head_t *list, void (*free_node)(void *))
-{
-    rwdtq_write_lock(list);
-    dtq_free_all(&list->head, free_node);
-    rwdtq_write_unlock(list);
-    return;
-}
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#endif /* _LIST_H_ */
+#endif /* LIST_H */
