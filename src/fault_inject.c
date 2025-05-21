@@ -80,7 +80,6 @@ fault_inject_item_t *fault_inject_get(char *name, uint64_t private)
         return NULL;
     }
 
-
     if (fault->enable == true) {
         int32_t times = ++fault->hit_times;
         if (times < fault->after_times ||

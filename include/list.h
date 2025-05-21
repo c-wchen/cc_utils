@@ -421,7 +421,7 @@ static inline void dl_init(dl_head_t *list)
 static inline void dl_init_node(dl_node_t *node)
 {
     node->next = (dl_node_t *)NULL;
-    node->prev = (dl_node_t *)NULL;
+    node->prev = (dl_node_t **)NULL;
     return;
 }
 static inline bool dl_is_empty(const dl_head_t *list)
@@ -495,7 +495,7 @@ static inline void dl_add_after(dl_node_t *prev, dl_node_t *insert)
 }
 static inline void dl_add_after_prevptr(dl_node_t **prev, dl_node_t *insert)
 {
-    insert->prev = *prev;
+    insert->prev = prev;
     insert->next = *prev;
     *prev = insert;
     if (NULL != insert->next) {
