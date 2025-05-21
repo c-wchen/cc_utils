@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CURRENT_PATH=$(pwd)
-SCAN_PATH=${CURRENT_PATH}/src,${CURRENT_PATH}/testcase
+SCAN_PATH=${CURRENT_PATH}/src,${CURRENT_PATH}/testcase,${CURRENT_PATH}/include
 SCAN_SUFFIX=*.c,*.h,*.cpp,*.cc
 ASTYLE_BIN=${CURRENT_PATH}/third_party/astyle/_install/bin/astyle
 
@@ -50,6 +50,6 @@ ASTYLE_CMD_OPTION="                   \
 
 for path in ${SCAN_PATH_ARR[@]}
 do
-    found=$(find ${path} -maxdepth 1 ${FIND_COND})
+    found=$(find ${path} -maxdepth 2 ${FIND_COND})
     ${ASTYLE_BIN} ${ASTYLE_CMD_OPTION} $found
 done

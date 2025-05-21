@@ -14,7 +14,6 @@ enum option_flag {
     OPTION_FLAG_OPT_ARG,
 };
 
-
 enum option_type {
     OPTION_INT,
     OPTION_LONG,
@@ -31,13 +30,13 @@ typedef int opt_cb(void *value, const char *optarg);
 struct cli_option {
     enum option_type type;
     enum option_flag flag;
-	int short_name;
-	const char *long_name;
-	void *value;
-	const char *argh;
-	const char *help;
-	opt_cb *callback;
-	intptr_t defval;
+    int short_name;
+    const char *long_name;
+    void *value;
+    const char *argh;
+    const char *help;
+    opt_cb *callback;
+    intptr_t defval;
 };
 
 int parse_options(void *cdp, int32_t argc, char *argv[], const struct cli_option *options, int32_t optnum);
@@ -86,7 +85,6 @@ int parse_options(void *cdp, int32_t argc, char *argv[], const struct cli_option
     .callback = NULL,                       \
 }
 
-
 #define OPT_STRING64(s, l, v, h) {          \
     .type = OPTION_STRING64,                \
     .flag = OPTION_FLAG_REQ_ARG,            \
@@ -97,7 +95,6 @@ int parse_options(void *cdp, int32_t argc, char *argv[], const struct cli_option
     .help = (h),                            \
     .callback = NULL,                       \
 }
-
 
 #define OPT_CALLBACK(s, l, v, h, cb) {      \
     .type = OPTION_CALLBACK,                \
@@ -110,7 +107,6 @@ int parse_options(void *cdp, int32_t argc, char *argv[], const struct cli_option
     .callback = (cb),                       \
 }
 
-
 #define OPT_DOUBLE(s, l, v, h) {            \
     .type = OPTION_DOUBLE,                  \
     .flag = OPTION_FLAG_REQ_ARG,            \
@@ -121,7 +117,6 @@ int parse_options(void *cdp, int32_t argc, char *argv[], const struct cli_option
     .help = (h),                            \
     .callback = NULL,                       \
 }
-
 
 #ifdef __cplusplus /* OPTION_H */
 }

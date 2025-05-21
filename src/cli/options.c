@@ -9,22 +9,20 @@
 #include "cli/cli.h"
 #include "cli/options.h"
 
-
 void print_help(void *cdp, const struct cli_option *copts, int32_t optnum)
 {
     CMD_PRINTLN(cdp, "help:");
     for (int i = 0; i < optnum; i++) {
-       CMD_PRINTLN(cdp, "    -%c, --%s\t%s", copts[i].short_name, copts[i].long_name, copts[i].help);
+        CMD_PRINTLN(cdp, "    -%c, --%s\t%s", copts[i].short_name, copts[i].long_name, copts[i].help);
     }
 }
-
 
 struct cli_option *find_option(struct cli_option *copts, int32_t optnum, int c)
 {
     for (int i = 0; i < optnum; i++) {
-       if (copts[i].short_name == c) {
+        if (copts[i].short_name == c) {
             return &copts[i];
-       }
+        }
     }
     return NULL;
 }
@@ -41,7 +39,6 @@ int parse_options(void *cdp, int32_t argc, char *argv[], const struct cli_option
     longopts[0].has_arg = no_argument;
     longopts[0].flag = NULL;
     optstring[optstring_idx++] = 'h';
-    
 
     for (int i = 0; i < optnum; i++) {
         longopts[i + 1].name = copts[i].long_name;
@@ -73,7 +70,6 @@ int parse_options(void *cdp, int32_t argc, char *argv[], const struct cli_option
     for (int i = 0; i < argc; i++) {
         new_argv[i + 1] = argv[i];
     }
-    
 
     int option_index = 0;
     int c;
@@ -124,6 +120,6 @@ int parse_options(void *cdp, int32_t argc, char *argv[], const struct cli_option
     free(new_argv);
     free(optstring);
     free(longopts);
-    
+
     return ret;
 }

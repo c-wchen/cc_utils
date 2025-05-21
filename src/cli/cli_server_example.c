@@ -1,6 +1,6 @@
-#include <unistd.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #include "cli/cli.h"
 #include "cli/options.h"
@@ -13,7 +13,7 @@ typedef struct {
     bool pass;
 } student;
 
-static void cmd_student(void *cdp, int32_t argc, char** argv)
+static void cmd_student(void *cdp, int32_t argc, char **argv)
 {
     printf("exec cmd student....\n");
     student s = {0};
@@ -44,11 +44,11 @@ int main()
     cli_create("wchen");
 
     (void)cli_register("stu", "query student", cmd_student);
-    
+
     while (1) {
         sleep(20);
     }
-    
+
     printf("start destroy...\n");
 
     cli_destroy();

@@ -15,7 +15,6 @@ extern "C" {
 
 #define DF_SOCKET_DIR "/var/tmp/%s.%d"
 
-
 ssize_t safe_read(int fd, void *buf, size_t count);
 int safe_write(int fd, const void *buf, signed int len);
 uint32_t msg_encode(char *buf, char *sub_command, int32_t argc, char **argv);
