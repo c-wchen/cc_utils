@@ -48,6 +48,7 @@ fault_inject_item_t *fault_inject_insert(const char *name)
     fault->item.after_times = 0;
     fault->item.enable = false;
     fault->item.inject_err = 0;
+    fault->item.hit_times = 0;
     strncpy(fault->item.name, name, FAULT_INJECT_NAME_SIZE - 1);
 
     dl_add_head(&faults, &fault->node);
@@ -72,7 +73,7 @@ int32_t fault_inject_unregister(const char *name)
     fault_inject_del(name);
 }
 
-fault_inject_item_t *fault_inject_get(char *name, uint64_t private)
+fault_inject_item_t *fault_inject_get(char *name, uint64_t priv)
 {
     fault_inject_item_t *fault = fault_inject_find(name);
 
@@ -82,7 +83,7 @@ fault_inject_item_t *fault_inject_get(char *name, uint64_t private)
 
     if (fault->enable == true) {
         int32_t times = ++fault->hit_times;
-        if (times < fault->after_times ||
+        if (times <= fault->after_times ||
             times - fault->after_times > fault->enable_times) {
             return NULL;
         } else {
