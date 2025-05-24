@@ -29,3 +29,11 @@ TEST(TEST_FAULT, test_fault_inject)
     }
     
 }
+
+
+TEST(TEST_FAULT, test_print_format)
+{
+    printf("%*d\n", 2, 9999);
+    printf("%2$*1$d\n", 2, 9990);
+
+}
