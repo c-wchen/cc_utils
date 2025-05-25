@@ -6,7 +6,6 @@ RADIX_TREE(rt_ex_root, GFP_KERNEL);
 
 #define LOG_INFO(fmt, ...) printk(KERN_INFO fmt " [%s:%d]\n", ##__VA_ARGS__, __func__, __LINE__)
 
-
 static int __init radix_tree_example_init(void)
 {
     char *ptr = NULL;
@@ -23,13 +22,12 @@ static int __init radix_tree_example_init(void)
     if (radix_tree_empty(&rt_ex_root)) {
         LOG_INFO("rt_ex_root is empty");
     }
-    
+
     ptr = (char *)radix_tree_lookup(&rt_ex_root, 10);
 
     LOG_INFO("cur ptr = %p, content = %s", ptr, ptr);
     return 0;
 }
-
 
 static void __exit radix_tree_example_exit(void)
 {
@@ -39,7 +37,6 @@ static void __exit radix_tree_example_exit(void)
     (void)radix_tree_delete(&rt_ex_root, 128UL);
     return;
 }
-
 
 module_init(radix_tree_example_init)
 module_exit(radix_tree_example_exit)

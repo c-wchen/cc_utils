@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 #ifndef container_of
-    #define container_of(ptr, type, member) ({                      \
+#define container_of(ptr, type, member) ({                      \
         const typeof( ((type *)0)->member ) *__mptr = (ptr);        \
         (type *)( (char *)__mptr - offsetof(type,member) );         \
     })
@@ -24,7 +24,6 @@ typedef struct sl_node {
 typedef struct sl_head {
     sl_node_t *first;
 } sl_head_t;
-
 
 #define SL_ENTRY(ptr, type, member) (container_of(ptr, type, member))
 
@@ -341,7 +340,6 @@ static inline stq_node_t *stq_del_after(stq_head_t *list,
          (void)({(prev_entry) = (entry); \
                   (entry) = STQ_ENTRY_NEXT(entry, member);}))
 
-                  
 static inline void stq_del(stq_head_t *list, const stq_node_t *node)
 {
     stq_node_t *cur, *prev;
@@ -381,7 +379,6 @@ static inline void stq_free_all(stq_head_t *list, void (*free_node)(void *))
     stq_init(list);
     return;
 }
-
 
 /* dl_list */
 
@@ -1029,7 +1026,6 @@ static inline void rwdtq_free_all(rwdtq_head_t *list, void (*free_node)(void *))
     rwdtq_write_unlock(list);
     return;
 }
-
 
 #ifdef __cplusplus
 extern "C" {

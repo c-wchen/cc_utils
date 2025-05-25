@@ -48,8 +48,23 @@ ASTYLE_CMD_OPTION="                   \
 --suffix=none                         \
 "
 
-for path in ${SCAN_PATH_ARR[@]}
-do
-    found=$(find ${path} -maxdepth 2 ${FIND_COND})
+scan_match_all() {
+    for path in ${SCAN_PATH_ARR[@]}
+    do
+        found=$(find ${path} -maxdepth 2 ${FIND_COND})
+        ${ASTYLE_BIN} ${ASTYLE_CMD_OPTION} $found
+    done
+}
+
+scan_match_spec() {
+    found=$1
     ${ASTYLE_BIN} ${ASTYLE_CMD_OPTION} $found
+}
+
+while getopts "f:" opt; do
+    case $opt in
+        f) scan_match_spec "$OPTARG"; exit 0 ;;
+    esac
 done
+
+scan_match_all

@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 #define BIT_SUCCESS 1
 #define BIT_FAIL -1
 

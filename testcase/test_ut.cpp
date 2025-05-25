@@ -141,7 +141,6 @@ TEST(TEST_UT, test_ut_singly_linked)
     printf("search id: 100, user id: %ld, user name: %s\n", tmp->user_id, tmp->user_name);
 }
 
-
 TEST(TEST_UT, test_ut_double_linked)
 {
     student s1, s2, s3, s4, *tmp, *shead = NULL;

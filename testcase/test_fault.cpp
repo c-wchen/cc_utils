@@ -27,9 +27,8 @@ TEST(TEST_FAULT, test_fault_inject)
         FAULT_INJECT_END("TEST_FAULT/test_fault_inject")
         printf("func ret = %d\n", ret);
     }
-    
-}
 
+}
 
 TEST(TEST_FAULT, test_print_format)
 {

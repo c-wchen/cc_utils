@@ -16,7 +16,6 @@ typedef struct {
     struct rb_node node;
 } fault_inject_internal_t;
 
-
 typedef struct {
     struct rb_root root;
     /* 单线程注册可以实现免锁，调用者约束 */
@@ -57,7 +56,7 @@ static fault_inject_internal_t *fault_inject_del(const char *name)
         return NULL;
     }
     rb_erase(find, &faults.root);
-    
+
     return rb_entry(find, fault_inject_internal_t, node);
 }
 
@@ -71,7 +70,6 @@ void fault_inject_reset(fault_inject_t *fault)
     fault->hit_times = 0;
     return;
 }
-
 
 void fault_inject_disable(const char *name)
 {
@@ -134,10 +132,9 @@ int32_t fault_inject_register(const char *name)
     return 0;
 }
 
-
 int32_t fault_inject_register_priv(const char *name,  priv_cb cb)
 {
-    
+
     if (fault_inject_find(name) == NULL) {
         fault_inject_t *fault = fault_inject_insert(name);
         fault_inject_internal_t *internal = container_of(fault, fault_inject_internal_t, item);
@@ -148,8 +145,9 @@ int32_t fault_inject_register_priv(const char *name,  priv_cb cb)
 int32_t fault_inject_unregister(const char *name)
 {
     fault_inject_internal_t *internal = fault_inject_del(name);
-    if (internal)
+    if (internal) {
         free(internal);
+    }
     return 0;
 }
 
@@ -169,8 +167,9 @@ fault_inject_t *fault_inject_cond_get(const char *name, uint64_t priv_arg)
         } else {
             fault_inject_internal_t *internal = container_of(fault, fault_inject_internal_t, item);
             if (internal->callback == NULL || internal->callback(priv_arg, fault->priv)) {
-                if (fault->sleep_time > 0)
+                if (fault->sleep_time > 0) {
                     sleep(fault->sleep_time);
+                }
                 return fault;
             }
         }

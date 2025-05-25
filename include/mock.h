@@ -9,23 +9,24 @@
 #include <stdlib.h>
 
 typedef struct {
-  void *fn;
-  char *mock;
-  size_t len;
+    void *fn;
+    char *mock;
+    size_t len;
 } mock_s;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-mock_s * mock_init(size_t mock_len);
+mock_s *mock_init(size_t mock_len);
 int mock_reset(mock_s *m);
 int mock_set(mock_s *m, void *fn, void *mock_fn);
 int mock_reset(mock_s *m);
 
 static inline void
-mock_finalize(mock_s *m) {
-  free(m);
+mock_finalize(mock_s *m)
+{
+    free(m);
 }
 
 #ifdef __cplusplus
