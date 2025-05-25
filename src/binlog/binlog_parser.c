@@ -61,7 +61,6 @@ static void binlog_parse_read(void)
         tbinpaser.read_buf_size = rdlen + (tbinpaser.read_buf_size - tbinpaser.curoff);
     }
     tbinpaser.curoff = 0;
-    printf("fileoff: %d file size: %d read len: %d\n", tbinpaser.file_off, tbinpaser.file_size, rdlen);
     return;
 }
 
@@ -337,6 +336,11 @@ int32_t print_format(char *format, binlog_va_list va_list, FILE *stream)
     return total_printed;
 }
 
+char *foramt_fetch(char *func, int32_t line)
+{
+    return "start test1 %s <%d %d %d %u %llu %f %lf>";
+}
+
 void binlog_prase(void)
 {
     struct timespec monotonic_ts;
@@ -379,7 +383,7 @@ void binlog_prase(void)
 
         fprintf(tbinpaser.out, "%s %s %#p ", time_fmt, binlog_level_name(level), thread);
 
-        print_format("start test1 %s <%d %d %d %u %llu %f %lf>", vlist, tbinpaser.out);
+        print_format(foramt_fetch(func, line), vlist, tbinpaser.out);
 
         fprintf(tbinpaser.out, " [%s:%d]\n", func, line);
         tbinpaser.curoff += len;
