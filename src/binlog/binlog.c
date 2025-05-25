@@ -1,0 +1,308 @@
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <time.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <assert.h>
+#include <pthread.h>
+
+#include "binlog/binlog.h"
+#include "binlog_internal.h"
+
+__thread tsd_binlog_t tbinlog;
+
+#define FUNC_INT      print_int
+#define FUNC_LONG     print_long
+#define FUNC_DOUBLE   print_double
+#define FUNC_STRING   print_string
+#define FUNC_POINTER  print_pointer
+
+static inline void binlog_write(int32_t fd)
+{
+    if (tbinlog.endoff > 0) {
+        write(fd, tbinlog.buf, tbinlog.endoff);
+    }
+    // assert(tbinlog.curoff - tbinlog.endoff == tbinlog.buf_size);
+    if (tbinlog.curoff - tbinlog.endoff > 0) {
+        memcpy(tbinlog.buf, tbinlog.buf + tbinlog.endoff, tbinlog.curoff - tbinlog.endoff);
+        tbinlog.curoff = tbinlog.curoff - tbinlog.endoff;
+    } else {
+        tbinlog.curoff = 0;
+    }
+    tbinlog.begoff = 0;
+    tbinlog.endoff = 0;
+    return;
+}
+
+static inline int print_int(int32_t fd, int32_t val)
+{
+    if (tbinlog.curoff + 1 + sizeof(int32_t) >= tbinlog.buf_size) {
+        binlog_write(fd);
+    }
+    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_INT;
+    tbinlog.curoff += 1;
+    *(int32_t *)(tbinlog.buf + tbinlog.curoff) = val;
+    tbinlog.curoff += 4;
+    return 1 + sizeof(int32_t);
+}
+
+static inline int print_long(int32_t fd, int64_t val)
+{
+    if (tbinlog.curoff + 1 + sizeof(int64_t) >= tbinlog.buf_size) {
+        binlog_write(fd);
+    }
+    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_LONG;
+    tbinlog.curoff += 1;
+    *(int64_t *)(tbinlog.buf + tbinlog.curoff) = val;
+    tbinlog.curoff += 8;
+    return 1 + sizeof(int64_t);
+}
+
+static inline int print_double(int32_t fd, double val)
+{
+    if (tbinlog.curoff + 1 + sizeof(double) >= tbinlog.buf_size) {
+        binlog_write(fd);
+    }
+    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_DOUBLE;
+    tbinlog.curoff += 1;
+    *(double *)(tbinlog.buf + tbinlog.curoff) = val;
+    tbinlog.curoff += 8;
+    return 1 + sizeof(double);
+}
+
+static inline int print_pointer(int32_t fd, void *val)
+{
+    if (tbinlog.curoff + 1 + sizeof(void *) >= tbinlog.buf_size) {
+        binlog_write(fd);
+    }
+    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_POINTER;
+    tbinlog.curoff += 1;
+    *(uint64_t *)(tbinlog.buf + tbinlog.curoff) = (uint64_t)val;
+    tbinlog.curoff += 8;
+    return 1 + sizeof(void *);
+}
+
+static inline int print_string(int32_t fd, char *val)
+{
+    int len = strlen(val);
+    if (tbinlog.curoff + 1 + len + 1 >= tbinlog.buf_size) {
+        binlog_write(fd);
+    }
+    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_STRING;
+    tbinlog.curoff += 1;
+    memcpy(tbinlog.buf + tbinlog.curoff, val, len + 1);
+    tbinlog.curoff += len + 1;
+    return len + 2;
+}
+
+static inline int print_begin(int32_t fd, uint8_t *val, uint32_t len)
+{
+    if (tbinlog.curoff + 1 + sizeof(int32_t) + len >= tbinlog.buf_size) {
+        binlog_write(fd);
+    }
+    tbinlog.begoff = tbinlog.curoff;
+    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_BEGIN;
+    tbinlog.curoff += 1;
+    memcpy(tbinlog.buf + tbinlog.curoff, val, len);
+    tbinlog.curoff += len;
+    return len + 1;
+}
+
+static inline int print_end(int32_t fd, int32_t valog_len)
+{
+    if (tbinlog.curoff + 1 >= tbinlog.buf_size) {
+        binlog_write(fd);
+    }
+    *(int32_t *)(tbinlog.buf + tbinlog.begoff + 1) = valog_len;
+    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_END;
+    tbinlog.curoff += 1;
+    tbinlog.endoff = tbinlog.curoff;
+    return 1;
+}
+
+#define PRINT_BINTYPE(BTYPE) \
+do { \
+    TYPE_BLOG_##BTYPE value = va_arg (ap, TYPE_BLOG_##BTYPE); \
+    int result = FUNC_##BTYPE(fd, value); \
+    ptr++; \
+    total_printed += result; \
+} while (0)
+
+int do_valog(const char *format, va_list ap, int32_t fd)
+{
+    const char *ptr = format;
+    int total_printed = 0;
+
+    while (*ptr != '\0') {
+        if (*ptr != '%') { /* While we have regular characters, print them.  */
+            ptr++;
+        } else { /* We got a format specifier! */
+            int wide_width = 0, short_width = 0;
+            ptr++;
+            while (strchr("-+ #0", *ptr)) { /* Move past flags.  */
+                ptr++;
+            }
+
+            if (*ptr == '*') {
+                PRINT_BINTYPE(INT);
+            } else
+                while (ISDIGIT(*ptr)) { /* Handle explicit numeric value.  */
+                    ptr++;
+                }
+
+            if (*ptr == '.') {
+                ptr++; /* Copy and go past the period.  */
+                if (*ptr == '*') {
+                    PRINT_BINTYPE(INT);
+                    ptr++;
+                } else
+                    while (ISDIGIT(*ptr)) { /* Handle explicit numeric value.  */
+                        ptr++;
+                    }
+            }
+            while (strchr("hlL", *ptr)) {
+                switch (*ptr) {
+                    case 'h':
+                        short_width = 1;
+                        break;
+                    case 'l':
+                        wide_width++;
+                        break;
+                    case 'L':
+                        wide_width = 2;
+                        break;
+                    default:
+                        abort();
+                }
+                ptr++;
+            }
+
+            switch (*ptr) {
+                case 'd':
+                case 'i':
+                case 'o':
+                case 'u':
+                case 'x':
+                case 'X':
+                case 'c': {
+                    /* Short values are promoted to int, so just copy it
+                               as an int and trust the C library printf to cast it
+                               to the right width.  */
+                    if (short_width) {
+                        PRINT_BINTYPE(INT);
+                    } else {
+                        switch (wide_width) {
+                            case 0:
+                                PRINT_BINTYPE(INT);
+                                break;
+                            case 1:
+                                PRINT_BINTYPE(LONG);
+                                break;
+                            case 2:
+                            default:
+                                PRINT_BINTYPE(LONG);
+                                break;
+                        } /* End of switch (wide_width) */
+                    } /* End of else statement */
+                    } /* End of integer case */
+                break;
+                case 'f':
+                case 'e':
+                case 'E':
+                case 'g':
+                case 'G': {
+                    if (wide_width == 0) {
+                        PRINT_BINTYPE(DOUBLE);
+                    } else {
+                        PRINT_BINTYPE(DOUBLE); /* Fake it and hope for the best.  */
+                    }
+                }
+                break;
+                case 's':
+                    PRINT_BINTYPE(STRING);
+                    break;
+                case 'p':
+                    PRINT_BINTYPE(POINTER);
+                    break;
+                case '%':
+                    break;
+                default:
+                    abort();
+            } /* End of switch (*ptr) */
+        } /* End of else statement */
+    }
+
+    return total_printed;
+}
+
+void *binlog_create(const char *name)
+{
+    binlog_handle_t *handle = (binlog_handle_t *)malloc(sizeof(binlog_handle_t));
+    if (handle == NULL) {
+        fprintf(stderr, "creatre handle faild(%d).", -ENOMEM);
+        return NULL;
+    }
+    int32_t off = snprintf(handle->name, sizeof(handle->name), "/var/log/tmp/%s", name);
+
+    if (off < 0 || off >= sizeof(handle->name)) {
+        fprintf(stderr, "name too long(%d).", -ENAMETOOLONG);
+        free(handle);
+        return NULL;
+    }
+
+    handle->fd = open(handle->name, O_WRONLY | O_CREAT | O_APPEND, 0644);
+
+    if (handle->fd < 0) {
+        fprintf(stderr, "open file %s faild(%d).", handle->name, -errno);
+        free(handle);
+        return NULL;
+    }
+    printf("thread name: %p\n", pthread_self());
+    return handle;
+}
+
+void binlog_destroy(void *handle)
+{
+    binlog_handle_t *internal_handle = (binlog_handle_t *)handle;
+    close(internal_handle->fd);
+    free(internal_handle);
+    return;
+}
+
+void binlog_print(void *handle, int32_t level, const char *func, int32_t line, const char *format, ...)
+{
+    if (tbinlog.buf == NULL) {
+        tbinlog.buf = malloc(1 << 22);
+        tbinlog.buf_size = 1 << 22;
+        tbinlog.curoff = 0;
+        tbinlog.endoff = 0;
+    }
+    binlog_handle_t *internal_handle = (binlog_handle_t *)handle;
+
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
+    time_t now = ts.tv_sec * (time_t)(1e6) + ts.tv_nsec / (time_t)(1e3);
+    int32_t len = sizeof(int32_t) /* length */ + 1 /* level */ + strlen(func) + 1 /* func */  +
+                  sizeof(line) /* line */ + sizeof(pthread_t) /* thread */ + sizeof(time_t) /* time */;
+    uint8_t prefix[len];
+    *(int32_t *)(prefix) = 0; /* length */
+    *(uint8_t *)(prefix + sizeof(int32_t)) = (uint8_t)level;
+    memcpy(prefix + sizeof(int32_t) + 1, func, strlen(func) + 1);
+    *(int32_t *)(prefix + sizeof(int32_t) + 1 + strlen(func) + 1) = line;
+    *(uint64_t *)(prefix + sizeof(int32_t) + 1 + strlen(func) + 1 + sizeof(line)) = pthread_self();
+    *(time_t *)(prefix + sizeof(int32_t) + 1 + strlen(func) + 1 + sizeof(line) + sizeof(uint64_t)) = now;
+
+    print_begin(internal_handle->fd, prefix, len);
+    va_list ap;
+    va_start(ap, format);
+    int32_t va_len = do_valog(format, ap, internal_handle->fd);
+    va_end(ap);
+
+    print_end(internal_handle->fd, va_len + len + 1 + 1);
+    return;
+}
