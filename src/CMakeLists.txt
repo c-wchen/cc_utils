@@ -22,3 +22,4 @@ if (ENABLE_ASAN)
 endif()
 
 add_subdirectory(cli)
+add_subdirectory(binlog)
