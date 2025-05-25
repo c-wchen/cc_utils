@@ -262,7 +262,6 @@ void *binlog_create(const char *name)
         free(handle);
         return NULL;
     }
-    printf("thread name: %p\n", pthread_self());
     return handle;
 }
 
