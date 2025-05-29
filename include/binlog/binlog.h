@@ -13,6 +13,8 @@ void binlog_destroy(void *handle);
 
 void binlog_print(void *handle, int32_t level, const char *func, int32_t line, const char *format, ...);
 
+void binlog_flush(void *handle);
+
 #define LOG_ERROR 1
 #define LOG_WARN  2
 #define LOG_INFO  3
