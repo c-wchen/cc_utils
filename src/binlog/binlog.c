@@ -39,65 +39,90 @@ static inline void binlog_write(int32_t fd)
     return;
 }
 
+static inline void bmem_write(binlog_mem_t *bmem, int32_t fd)
+{
+    return;
+}
+
 static inline int print_int(int32_t fd, int32_t val)
 {
-    if (tbinlog.curoff + 1 + sizeof(int32_t) >= tbinlog.buf_size) {
+    int result = 1 + sizeof(int32_t);
+    if (fd < 0) {
+        return result;
+    }
+    if (tbinlog.curoff + result >= tbinlog.buf_size) {
         binlog_write(fd);
     }
     *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_INT;
     tbinlog.curoff += 1;
     *(int32_t *)(tbinlog.buf + tbinlog.curoff) = val;
     tbinlog.curoff += 4;
-    return 1 + sizeof(int32_t);
+    return result;
 }
 
 static inline int print_long(int32_t fd, int64_t val)
 {
-    if (tbinlog.curoff + 1 + sizeof(int64_t) >= tbinlog.buf_size) {
+    int result = 1 + sizeof(int64_t);
+    if (fd < 0) {
+        return result;
+    }
+    if (tbinlog.curoff + result >= tbinlog.buf_size) {
         binlog_write(fd);
     }
     *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_LONG;
     tbinlog.curoff += 1;
     *(int64_t *)(tbinlog.buf + tbinlog.curoff) = val;
     tbinlog.curoff += 8;
-    return 1 + sizeof(int64_t);
+    return result;
 }
 
 static inline int print_double(int32_t fd, double val)
 {
-    if (tbinlog.curoff + 1 + sizeof(double) >= tbinlog.buf_size) {
+    int result = 1 + sizeof(double);
+    if (fd < 0) {
+        return result;
+    }
+    if (tbinlog.curoff + result >= tbinlog.buf_size) {
         binlog_write(fd);
     }
     *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_DOUBLE;
     tbinlog.curoff += 1;
     *(double *)(tbinlog.buf + tbinlog.curoff) = val;
     tbinlog.curoff += 8;
-    return 1 + sizeof(double);
+    return result;
 }
 
 static inline int print_pointer(int32_t fd, void *val)
 {
-    if (tbinlog.curoff + 1 + sizeof(void *) >= tbinlog.buf_size) {
+    int result = 1 + sizeof(void *);
+    if (fd < 0) {
+        return result;
+    }
+    if (tbinlog.curoff + result >= tbinlog.buf_size) {
         binlog_write(fd);
     }
     *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_POINTER;
     tbinlog.curoff += 1;
     *(uint64_t *)(tbinlog.buf + tbinlog.curoff) = (uint64_t)val;
     tbinlog.curoff += 8;
-    return 1 + sizeof(void *);
+    return result;
 }
 
 static inline int print_string(int32_t fd, char *val)
 {
+    int result = strlen(val) + 1 + 1;
+    if (fd < 0) {
+        return result;
+    }
     int len = strlen(val);
-    if (tbinlog.curoff + 1 + len + 1 >= tbinlog.buf_size) {
+    if (tbinlog.curoff +result >= tbinlog.buf_size) {
         binlog_write(fd);
     }
     *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_STRING;
     tbinlog.curoff += 1;
     memcpy(tbinlog.buf + tbinlog.curoff, val, len + 1);
     tbinlog.curoff += len + 1;
-    return len + 2;
+    return result;
 }
 
 static inline int print_begin(int32_t fd, uint8_t *val, uint32_t len)
