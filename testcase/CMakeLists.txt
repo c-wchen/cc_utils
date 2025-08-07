@@ -5,9 +5,10 @@ set(CMAKE_VERBOSE_MAKEFILEON ON)
 option(ENABLE_ASAN "ENABLE_ASAN: " ON)
 option(ENABLE_COVERAGE "ENABLE_COVERAGE: " ON)
 option(ENABLE_DEBUG "ENABLE_COVERAGE: " ON)
+option(ENABLE_RECOMPILE "ENABLE_GTEST_MOCKCPP_COMPILE: " ON)
 
 # asan
-set(CMAKE_CXX_FLAGS "-g -std=c++11 -fno-omit-frame-pointer")
+set(CMAKE_CXX_FLAGS "-g -std=c++11 -fno-omit-frame-pointer -fpermissive")
 if (ENABLE_ASAN)
 	add_definitions("-fsanitize=address")
 endif()
@@ -17,7 +18,7 @@ if (ENABLE_COVERAGE)
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
 endif ()
 
-link_directories(${CMAKE_SOURCE_DIR}/lib)
+# link_directories(${CMAKE_SOURCE_DIR}/lib)
 
 include_directories(CMAKE_SOURCE_DIR/include)
 aux_source_directory(. TEST_SRC_LIST)
@@ -35,6 +36,7 @@ set(BIN_DIRECTORY_DIR binary_dir)
 # target_link_libraries(${PROJECT_NAME} PkgConfig::deps)
 
 ## 第三方头文件
+include_directories(${THIRD_PARTY_PATH}/cvector)
 include_directories(${THIRD_PARTY_PATH}/uthash/src)
 include_directories(${THIRD_PARTY_PATH}/googletest/googletest/include)
 include_directories(${THIRD_PARTY_PATH}/mockcpp/3rdparty)
@@ -45,11 +47,11 @@ include_directories(${TOP_DIR}/include)
 ##　gtest编译
 set(GOOGLETEST_VERSION 1.11.0)
 
-if (NOT EXISTS ${CMAKE_SOURCE_DIR}/lib/libgtest.a)
+if (ENABLE_RECOMPILE OR NOT EXISTS ${CMAKE_SOURCE_DIR}/lib/libgtest.a)
     add_subdirectory(${THIRD_PARTY_PATH}/googletest/googletest gtest_${BIN_DIRECTORY_DIR})
 endif()
 
-if (NOT EXISTS ${CMAKE_SOURCE_DIR}/lib/libmockcpp.a)
+if (ENABLE_RECOMPILE OR NOT EXISTS ${CMAKE_SOURCE_DIR}/lib/libmockcpp.a)
     add_subdirectory(${THIRD_PARTY_PATH}/mockcpp mockcpp_${BIN_DIRECTORY_DIR})
 endif()
 
