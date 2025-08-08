@@ -22,143 +22,120 @@ __thread tsd_binlog_t tbinlog;
 #define FUNC_STRING   print_string
 #define FUNC_POINTER  print_pointer
 
-static inline void binlog_write(int32_t fd)
+
+static inline void binlog_maybe_realloc(int32_t size)
 {
-    if (tbinlog.endoff > 0) {
-        write(fd, tbinlog.buf, tbinlog.endoff);
+    if (tbinlog.offset + size > tbinlog.size) {
+        if (tbinlog.size == BINLOG_STACK_SIZE) {
+            void *buf = tbinlog.buf;
+            tbinlog.size = 2 * BINLOG_STACK_SIZE;
+            tbinlog.buf = malloc(2 * BINLOG_STACK_SIZE);
+            memcpy(tbinlog.buf, buf, BINLOG_STACK_SIZE);
+        } else {
+            tbinlog.buf = realloc(tbinlog.buf, 2 * tbinlog.size);
+            tbinlog.size = 2 * tbinlog.size;
+        }
     }
-    // assert(tbinlog.curoff - tbinlog.endoff == tbinlog.buf_size);
-    if (tbinlog.curoff - tbinlog.endoff > 0) {
-        memcpy(tbinlog.buf, tbinlog.buf + tbinlog.endoff, tbinlog.curoff - tbinlog.endoff);
-        tbinlog.curoff = tbinlog.curoff - tbinlog.endoff;
-    } else {
-        tbinlog.curoff = 0;
-    }
-    tbinlog.begoff = 0;
-    tbinlog.endoff = 0;
     return;
 }
 
-static inline void bmem_write(binlog_mem_t *bmem, int32_t fd)
+static inline void binlog_maybe_free(void)
 {
-    return;
+    if (tbinlog.size > BINLOG_STACK_SIZE) {
+        free(tbinlog.buf);
+    }
+    tbinlog.size = 0;
+    tbinlog.buf = NULL;
+    tbinlog.offset = 0;
 }
 
-static inline int print_int(int32_t fd, int32_t val)
+static inline int print_int(int32_t val)
 {
     int result = 1 + sizeof(int32_t);
-    if (fd < 0) {
-        return result;
-    }
-    if (tbinlog.curoff + result >= tbinlog.buf_size) {
-        binlog_write(fd);
-    }
-    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_INT;
-    tbinlog.curoff += 1;
-    *(int32_t *)(tbinlog.buf + tbinlog.curoff) = val;
-    tbinlog.curoff += 4;
+    binlog_maybe_realloc(result);
+    *(uint8_t *)(tbinlog.buf + tbinlog.offset) = BLOG_INT;
+    tbinlog.offset += 1;
+    *(int32_t *)(tbinlog.buf + tbinlog.offset) = val;
+    tbinlog.offset += 4;
     return result;
 }
 
-static inline int print_long(int32_t fd, int64_t val)
+static inline int print_long(int64_t val)
 {
     int result = 1 + sizeof(int64_t);
-    if (fd < 0) {
-        return result;
-    }
-    if (tbinlog.curoff + result >= tbinlog.buf_size) {
-        binlog_write(fd);
-    }
-    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_LONG;
-    tbinlog.curoff += 1;
-    *(int64_t *)(tbinlog.buf + tbinlog.curoff) = val;
-    tbinlog.curoff += 8;
+    binlog_maybe_realloc(result);
+    *(uint8_t *)(tbinlog.buf + tbinlog.offset) = BLOG_LONG;
+    tbinlog.offset += 1;
+    *(int64_t *)(tbinlog.buf + tbinlog.offset) = val;
+    tbinlog.offset += 8;
     return result;
 }
 
-static inline int print_double(int32_t fd, double val)
+static inline int print_double(double val)
 {
     int result = 1 + sizeof(double);
-    if (fd < 0) {
-        return result;
-    }
-    if (tbinlog.curoff + result >= tbinlog.buf_size) {
-        binlog_write(fd);
-    }
-    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_DOUBLE;
-    tbinlog.curoff += 1;
-    *(double *)(tbinlog.buf + tbinlog.curoff) = val;
-    tbinlog.curoff += 8;
+    binlog_maybe_realloc(result);
+    *(uint8_t *)(tbinlog.buf + tbinlog.offset) = BLOG_DOUBLE;
+    tbinlog.offset += 1;
+    *(double *)(tbinlog.buf + tbinlog.offset) = val;
+    tbinlog.offset += 8;
     return result;
 }
 
-static inline int print_pointer(int32_t fd, void *val)
+static inline int print_pointer(void *val)
 {
     int result = 1 + sizeof(void *);
-    if (fd < 0) {
-        return result;
-    }
-    if (tbinlog.curoff + result >= tbinlog.buf_size) {
-        binlog_write(fd);
-    }
-    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_POINTER;
-    tbinlog.curoff += 1;
-    *(uint64_t *)(tbinlog.buf + tbinlog.curoff) = (uint64_t)val;
-    tbinlog.curoff += 8;
+    binlog_maybe_realloc(result);
+    *(uint8_t *)(tbinlog.buf + tbinlog.offset) = BLOG_POINTER;
+    tbinlog.offset += 1;
+    *(uint64_t *)(tbinlog.buf + tbinlog.offset) = (uint64_t)val;
+    tbinlog.offset += 8;
     return result;
 }
 
-static inline int print_string(int32_t fd, char *val)
+static inline int print_string(char *val)
 {
     int result = strlen(val) + 1 + 1;
-    if (fd < 0) {
-        return result;
-    }
     int len = strlen(val);
-    if (tbinlog.curoff +result >= tbinlog.buf_size) {
-        binlog_write(fd);
-    }
-    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_STRING;
-    tbinlog.curoff += 1;
-    memcpy(tbinlog.buf + tbinlog.curoff, val, len + 1);
-    tbinlog.curoff += len + 1;
+    binlog_maybe_realloc(result);
+    *(uint8_t *)(tbinlog.buf + tbinlog.offset) = BLOG_STRING;
+    tbinlog.offset += 1;
+    memcpy(tbinlog.buf + tbinlog.offset, val, len + 1);
+    tbinlog.offset += len + 1;
     return result;
 }
 
-static inline int print_begin(int32_t fd, uint8_t *val, uint32_t len)
+static inline int print_begin(uint8_t *val, uint32_t len)
 {
-    if (tbinlog.curoff + 1 + sizeof(int32_t) + len >= tbinlog.buf_size) {
-        binlog_write(fd);
-    }
-    tbinlog.begoff = tbinlog.curoff;
-    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_BEGIN;
-    tbinlog.curoff += 1;
-    memcpy(tbinlog.buf + tbinlog.curoff, val, len);
-    tbinlog.curoff += len;
+    *(uint8_t *)(tbinlog.buf + tbinlog.offset) = BLOG_BEGIN;
+    tbinlog.offset += 1;
+    memcpy(tbinlog.buf + tbinlog.offset, val, len);
+    tbinlog.offset += len;
     return len + 1;
 }
 
 static inline int print_end(int32_t fd, int32_t valog_len)
 {
-    if (tbinlog.curoff + 1 >= tbinlog.buf_size) {
-        binlog_write(fd);
-    }
-    *(int32_t *)(tbinlog.buf + tbinlog.begoff + 1) = valog_len;
-    *(uint8_t *)(tbinlog.buf + tbinlog.curoff) = BLOG_END;
-    tbinlog.curoff += 1;
-    tbinlog.endoff = tbinlog.curoff;
-    return 1;
+    binlog_maybe_realloc(sizeof(uint8_t));
+    *(int32_t *)(tbinlog.buf + sizeof(uint8_t)) = valog_len;
+    *(uint8_t *)(tbinlog.buf + tbinlog.offset) = BLOG_END;
+    tbinlog.offset += 1;
+
+    write(fd, tbinlog.buf, tbinlog.offset);
+
+    binlog_maybe_free();
+    return sizeof(uint8_t);
 }
 
-#define PRINT_BINTYPE(BTYPE) \
-do { \
-    TYPE_BLOG_##BTYPE value = va_arg (ap, TYPE_BLOG_##BTYPE); \
-    int result = FUNC_##BTYPE(fd, value); \
-    ptr++; \
-    total_printed += result; \
-} while (0)
+#define PRINT_BINTYPE(BTYPE)                                        \
+    do {                                                            \
+        TYPE_BLOG_##BTYPE value = va_arg (ap, TYPE_BLOG_##BTYPE);   \
+        int result = FUNC_##BTYPE(value);                           \
+        ptr++;                                                      \
+        total_printed += result;                                    \
+    } while (0)
 
-int do_valog(const char *format, va_list ap, int32_t fd)
+int do_valog(const char *format, va_list ap)
 {
     const char *ptr = format;
     int total_printed = 0;
@@ -300,33 +277,59 @@ void binlog_destroy(void *handle)
 
 void binlog_print(void *handle, int32_t level, const char *func, int32_t line, const char *format, ...)
 {
-    if (tbinlog.buf == NULL) {
-        tbinlog.buf = malloc(1 << 22);
-        tbinlog.buf_size = 1 << 22;
-        tbinlog.curoff = 0;
-        tbinlog.endoff = 0;
+    if (handle == NULL) {
+        return;
     }
+    char buf[BINLOG_STACK_SIZE];
+    tbinlog.buf = buf;
+    tbinlog.size = BINLOG_STACK_SIZE;
+    tbinlog.offset = 0;
+
     binlog_handle_t *internal_handle = (binlog_handle_t *)handle;
 
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
     time_t now = ts.tv_sec * (time_t)(1e6) + ts.tv_nsec / (time_t)(1e3);
-    int32_t len = sizeof(int32_t) /* length */ + 1 /* level */ + strlen(func) + 1 /* func */  +
-                  sizeof(line) /* line */ + sizeof(pthread_t) /* thread */ + sizeof(time_t) /* time */;
-    uint8_t prefix[len];
-    *(int32_t *)(prefix) = 0; /* length */
-    *(uint8_t *)(prefix + sizeof(int32_t)) = (uint8_t)level;
-    memcpy(prefix + sizeof(int32_t) + 1, func, strlen(func) + 1);
-    *(int32_t *)(prefix + sizeof(int32_t) + 1 + strlen(func) + 1) = line;
-    *(uint64_t *)(prefix + sizeof(int32_t) + 1 + strlen(func) + 1 + sizeof(line)) = pthread_self();
-    *(time_t *)(prefix + sizeof(int32_t) + 1 + strlen(func) + 1 + sizeof(line) + sizeof(uint64_t)) = now;
 
-    print_begin(internal_handle->fd, prefix, len);
+    const int32_t size = sizeof(int32_t) /* length */ + 1 /* level */ + strlen(func) + 1 /* func */  +
+                  sizeof(line) /* line */ + sizeof(pthread_t) /* thread */ + sizeof(time_t) /* time */;
+
+    uint8_t prefix[size];
+    size_t offset = 0;
+
+    /* length */
+    *(int32_t *)(prefix + offset) = 0;
+    offset += sizeof(int32_t);
+
+    /* level */
+    *(uint8_t *)(prefix + offset) = (uint8_t)level;
+    offset += sizeof(uint8_t);
+
+    /* function */
+    memcpy(prefix + offset, func, strlen(func) + 1);
+    offset += strlen(func) + 1;
+
+    /* line */
+    *(int32_t *)(prefix + offset) = line;
+    offset += sizeof(line);
+
+    /* thread */
+    *(uint64_t *)(prefix + offset) = pthread_self();
+    offset += sizeof(uint64_t);
+
+    /* timestamp */
+    *(time_t *)(prefix + offset) = now;
+    offset += sizeof(time_t);
+
+    assert(size == offset);
+    /* begin */
+    print_begin(prefix, size);
     va_list ap;
     va_start(ap, format);
-    int32_t va_len = do_valog(format, ap, internal_handle->fd);
+    int32_t va_length = do_valog(format, ap);
     va_end(ap);
 
-    print_end(internal_handle->fd, va_len + len + 1 + 1);
+    /* end */
+    print_end(internal_handle->fd, va_length + size + sizeof(uint8_t) /* begin type */  + sizeof(uint8_t) /* end type */);
     return;
 }
