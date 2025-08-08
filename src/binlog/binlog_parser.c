@@ -19,13 +19,13 @@ typedef struct {
     int32_t fd;
     FILE *out;
     void *buf;
-    int32_t buf_size;
-    int32_t read_buf_size;
-    int32_t curoff;
+    int32_t size;
+    int32_t read_size;
+    int32_t offset;
 
-    int32_t file_off;
+    int32_t file_offset;
     int32_t file_size;
-} tsd_binlog_parser_t;
+} binlog_parser_t;
 
 typedef struct {
     int32_t len;
@@ -33,7 +33,6 @@ typedef struct {
     void *buf;
 } binlog_va_list;
 
-__thread tsd_binlog_parser_t tbinpaser;
 
 static int32_t binlog_file_size(const char *filename)
 {
@@ -44,27 +43,28 @@ static int32_t binlog_file_size(const char *filename)
     return st.st_size;
 }
 
-static void binlog_parse_read(void)
+static void binlog_parse_read(binlog_parser_t *parser)
 {
-    int rdlen;
-    if (tbinpaser.file_off == 0) {
-        rdlen = read(tbinpaser.fd, tbinpaser.buf, tbinpaser.buf_size);
-        assert(rdlen > 0);
-        tbinpaser.file_off += rdlen;
-        tbinpaser.read_buf_size = rdlen;
+    int read_size;
+    if (parser->file_offset == 0) {
+        read_size = read(parser->fd, parser->buf, parser->size);
+        assert(read_size > 0);
+        parser->file_offset += read_size;
+        parser->read_size = read_size;
     } else {
-        memcpy(tbinpaser.buf, tbinpaser.buf + tbinpaser.curoff, tbinpaser.read_buf_size - tbinpaser.curoff);
-        rdlen = read(tbinpaser.fd, tbinpaser.buf + (tbinpaser.read_buf_size - tbinpaser.curoff),
-                     tbinpaser.buf_size - (tbinpaser.read_buf_size - tbinpaser.curoff));
-        assert(rdlen > 0);
-        tbinpaser.file_off += rdlen;
-        tbinpaser.read_buf_size = rdlen + (tbinpaser.read_buf_size - tbinpaser.curoff);
+        memcpy(parser->buf, parser->buf + parser->offset, parser->read_size - parser->offset);
+        read_size = read(parser->fd, parser->buf + (parser->read_size - parser->offset),
+                         parser->size - (parser->read_size - parser->offset));
+
+        assert(read_size > 0);
+        parser->file_offset += read_size;
+        parser->read_size = read_size + (parser->read_size - parser->offset);
     }
-    tbinpaser.curoff = 0;
+    parser->offset = 0;
     return;
 }
 
-void binlog_parser_create(const char *name, const char *output)
+void binlog_parser_create(binlog_parser_t *parser, const char *name, const char *output)
 {
     char path_name[128];
     int32_t off = snprintf(path_name, sizeof(path_name), "/var/log/tmp/%s", name);
@@ -74,46 +74,46 @@ void binlog_parser_create(const char *name, const char *output)
         return;
     }
 
-    tbinpaser.fd = open(path_name, O_RDONLY, 0644);
+    parser->fd = open(path_name, O_RDONLY, 0644);
 
-    if (tbinpaser.fd < 0) {
+    if (parser->fd < 0) {
         fprintf(stderr, "open file %s faild(%d).", path_name, -errno);
         return;
     }
 
     char output_path_name[128];
     off = snprintf(output_path_name, sizeof(output_path_name), "/var/log/tmp/%s", output);
-    tbinpaser.out = fopen(output_path_name, "a");
+    parser->out = fopen(output_path_name, "a");
 
-    if (tbinpaser.out == NULL) {
-        close(tbinpaser.fd);
+    if (parser->out == NULL) {
+        close(parser->fd);
         fprintf(stderr, "open  output file %s faild (%d).", output_path_name, -errno);
         return;
     }
 
-    tbinpaser.buf = malloc(1 << 22);
-    tbinpaser.curoff = 0;
-    tbinpaser.buf_size = 1 << 22;
+    parser->buf = malloc(1 << 22);
+    parser->offset = 0;
+    parser->size = 1 << 22;
 
-    tbinpaser.file_size = binlog_file_size(path_name);
-    if (tbinpaser.file_size < 0) {
-        fclose(tbinpaser.out);
-        close(tbinpaser.fd);
-        fprintf(stderr, "file size get faild (%d).", path_name, tbinpaser.file_size);
+    parser->file_size = binlog_file_size(path_name);
+    if (parser->file_size < 0) {
+        fclose(parser->out);
+        close(parser->fd);
+        fprintf(stderr, "file size get faild (%d).", path_name, parser->file_size);
         return;
     }
-    tbinpaser.file_off = 0;
+    parser->file_offset = 0;
 
-    binlog_parse_read();
+    binlog_parse_read(parser);
 
     return;
 }
 
-void binlog_parser_destroy(void)
+void binlog_parser_destroy(binlog_parser_t *bparser)
 {
-    close(tbinpaser.fd);
-    if (tbinpaser.buf != NULL) {
-        free(tbinpaser.buf);
+    close(bparser->fd);
+    if (bparser->buf != NULL) {
+        free(bparser->buf);
     }
     return;
 }
@@ -185,43 +185,44 @@ static inline char *get_string(binlog_va_list *vlist)
 #define PARSE_FUNC_STRING   get_string
 #define PARSE_FUNC_POINTER  get_pointer
 
-#define binlog_va_arg(BTYPE) ({ \
-    TYPE_BLOG_##BTYPE __arg = PARSE_FUNC_##BTYPE(&(va_list)); \
-    __arg; \
+#define binlog_va_arg(BTYPE) ({                                \
+    TYPE_BLOG_##BTYPE __arg = PARSE_FUNC_##BTYPE(&(va_list));  \
+    __arg;                                                     \
 })
 
-#define COPY_VA_INT \
-    do { \
-        const int value = abs (binlog_va_arg (INT)); \
-        char buf[32]; \
-        ptr++; /* Go past the asterisk.  */ \
-        *sptr = '\0'; /* NULL terminate sptr.  */ \
-        sprintf(buf, "%d", value); \
-        strcat(sptr, buf); \
-        while (*sptr) sptr++; \
+#define COPY_VA_INT                                      \
+    do {                                                 \
+        const int value = abs (binlog_va_arg (INT));     \
+        char buf[32];                                    \
+        ptr++; /* Go past the asterisk.  */              \
+        *sptr = '\0'; /* NULL terminate sptr.  */        \
+        sprintf(buf, "%d", value);                       \
+        strcat(sptr, buf);                               \
+        while (*sptr) sptr++;                            \
     } while (0)
 
-#define PRINT_CHAR(CHAR) \
-    do { \
-        putc(CHAR, stream); \
-        ptr++; \
-        total_printed++; \
+#define PRINT_CHAR(CHAR)                                 \
+    do {                                                 \
+        putc(CHAR, stream);                              \
+        ptr++;                                           \
+        total_printed++;                                 \
     } while (0)
 
-#define PRINT_TYPE(BTYPE) \
-    do { \
-        int result; \
-        TYPE_BLOG_##BTYPE value = binlog_va_arg (BTYPE); \
+#define PRINT_TYPE(BTYPE)                                 \
+    do {                                                  \
+        int result;                                       \
+        TYPE_BLOG_##BTYPE value = binlog_va_arg (BTYPE);  \
         *sptr++ = *ptr++; /* Copy the type specifier.  */ \
-        *sptr = '\0'; /* NULL terminate sptr.  */ \
-        result = fprintf(stream, specifier, value); \
-        if (result == -1) \
-            return -1; \
-        else { \
-            total_printed += result; \
-            continue; \
-        } \
+        *sptr = '\0'; /* NULL terminate sptr.  */         \
+        result = fprintf(stream, specifier, value);       \
+        if (result == -1)                                 \
+            return -1;                                    \
+        else {                                            \
+            total_printed += result;                      \
+            continue;                                     \
+        }                                                 \
     } while (0)
+
 
 int32_t print_format(char *format, binlog_va_list va_list, FILE *stream)
 {
@@ -341,7 +342,7 @@ char *foramt_fetch(char *func, int32_t line)
     return "start test1 %s <%d %d %d %u %llu %f %lf>";
 }
 
-void binlog_prase(void)
+void binlog_prase(binlog_parser_t *parser)
 {
     struct timespec monotonic_ts;
     clock_gettime(CLOCK_MONOTONIC_COARSE, &monotonic_ts);
@@ -350,27 +351,48 @@ void binlog_prase(void)
 
     time_t diff = realtime_ts.tv_sec * (time_t)(1e6) + realtime_ts.tv_nsec / (time_t)(1e3) -
                   monotonic_ts.tv_sec * (time_t)(1e6) + monotonic_ts.tv_nsec / (time_t)(1e3);
-
     while (1) {
-        if (tbinpaser.curoff == tbinpaser.read_buf_size) {
-            binlog_parse_read();
+        if (parser->offset == parser->read_size) {
+            binlog_parse_read(parser);
         }
-        void *buffer = tbinpaser.buf + tbinpaser.curoff;
-        int len = *(int32_t *)(buffer + 1);
-        if (len + tbinpaser.curoff > tbinpaser.read_buf_size) {
-            binlog_parse_read();
+        void *buffer = parser->buf + parser->offset;
+
+        /* begin */
+        uint32_t offset = sizeof(uint8_t);
+
+        /* length */
+        int len = *(int32_t *)(buffer + offset);
+        offset += sizeof(int32_t);
+    
+        if (len + parser->offset > parser->read_size) {
+            binlog_parse_read(parser);
         }
-        buffer = tbinpaser.buf + tbinpaser.curoff;
-        uint8_t level =  *(uint8_t *)(buffer + 1 + sizeof(int));
-        char *func = (char *)(buffer + 1 + sizeof(int) + 1);
-        int32_t line = *(int32_t *)(buffer + 1 + sizeof(int) + 1 + strlen(func) + 1);
-        pthread_t thread = (pthread_t)(*(uint64_t *)(buffer + 1 + sizeof(int) + 1 + strlen(func) + 1 + sizeof(line)));
-        time_t ts = *(time_t *)(buffer + 1 + sizeof(int) + 1 + strlen(func) + 1 + sizeof(line) + sizeof(pthread_t));
+        buffer = parser->buf + parser->offset;
+
+        /* level */
+        uint8_t level =  *(uint8_t *)(buffer + offset);
+        offset += sizeof(uint8_t);
+    
+        /* function */
+        char *func = (char *)(buffer + offset);
+        offset += strlen(func) + 1;
+
+        /* line */
+        int32_t line = *(int32_t *)(buffer + offset);
+        offset += sizeof(int32_t);
+
+        /* thread */
+        pthread_t thread = (pthread_t)(*(uint64_t *)(buffer + offset));
+        offset += sizeof(uint64_t);
+
+        /* timestamp */
+        time_t ts = *(time_t *)(buffer + offset);
+        offset += sizeof(time_t);
 
         binlog_va_list vlist = {
             .len = len,
             .buf = buffer,
-            .off = 1 + sizeof(int) + 1 + strlen(func) + 1 + sizeof(line) + sizeof(pthread_t) + sizeof(time_t)
+            .off = offset
         };
 
         time_t real_us = ts + diff;
@@ -381,13 +403,17 @@ void binlog_prase(void)
         strftime(time_fmt, sizeof(time_fmt), "%Y-%m-%d %H:%M:%S", &utc_time);
         snprintf(time_fmt + strlen(time_fmt), sizeof(time_fmt) - strlen(time_fmt), ".%03ld", real_us % 1000);
 
-        fprintf(tbinpaser.out, "%s %s %#p ", time_fmt, binlog_level_name(level), thread);
+        /* prefix */
+        fprintf(parser->out, "%s %s %#p ", time_fmt, binlog_level_name(level), thread);
 
-        print_format(foramt_fetch(func, line), vlist, tbinpaser.out);
+        /* va args */
+        print_format(foramt_fetch(func, line), vlist, parser->out);
 
-        fprintf(tbinpaser.out, " [%s:%d]\n", func, line);
-        tbinpaser.curoff += len;
-        if (tbinpaser.file_off == tbinpaser.file_size && tbinpaser.curoff == tbinpaser.read_buf_size) {
+        /* function + line */
+        fprintf(parser->out, " [%s:%d]\n", func, line);
+
+        parser->offset += len;
+        if (parser->file_offset == parser->file_size && parser->offset == parser->read_size) {
             break;
         }
     }
@@ -412,8 +438,9 @@ int main(int argc, char **argv)
     if (name == NULL || output == NULL) {
         exit(-1);
     }
+    binlog_parser_t parser;
 
-    binlog_parser_create(name, output);
-    binlog_prase();
-    binlog_parser_destroy();
+    binlog_parser_create(&parser, name, output);
+    binlog_prase(&parser);
+    binlog_parser_destroy(&parser);
 }
