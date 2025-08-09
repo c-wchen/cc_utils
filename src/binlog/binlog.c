@@ -22,18 +22,21 @@ __thread tsd_binlog_t tbinlog;
 #define FUNC_STRING   print_string
 #define FUNC_POINTER  print_pointer
 
+#define MAX(a, b) (a) > (b) ? (a) : (b)
 
 static inline void binlog_maybe_realloc(int32_t size)
 {
     if (tbinlog.offset + size > tbinlog.size) {
         if (tbinlog.size == BINLOG_STACK_SIZE) {
             void *buf = tbinlog.buf;
-            tbinlog.size = 2 * BINLOG_STACK_SIZE;
-            tbinlog.buf = malloc(2 * BINLOG_STACK_SIZE);
+            int32_t alloc_size = MAX(2 * BINLOG_STACK_SIZE, tbinlog.offset + size + BINLOG_STACK_SIZE - 1 / BINLOG_STACK_SIZE);
+            tbinlog.size = alloc_size;
+            tbinlog.buf = malloc(alloc_size);
             memcpy(tbinlog.buf, buf, BINLOG_STACK_SIZE);
         } else {
-            tbinlog.buf = realloc(tbinlog.buf, 2 * tbinlog.size);
-            tbinlog.size = 2 * tbinlog.size;
+            int32_t alloc_size = MAX(2 * tbinlog.size, tbinlog.offset + size + BINLOG_STACK_SIZE - 1 / BINLOG_STACK_SIZE);
+            tbinlog.buf = realloc(tbinlog.buf, alloc_size);
+            tbinlog.size = alloc_size;
         }
     }
     return;
