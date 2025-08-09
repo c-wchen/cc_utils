@@ -12,6 +12,8 @@
 #include <pthread.h>
 #include <sys/stat.h>
 
+
+#include "cJSON.h"
 #include "binlog/binlog.h"
 #include "binlog_internal.h"
 
@@ -19,6 +21,7 @@ typedef struct {
     int32_t fd;
     FILE *out;
     void *buf;
+    cJSON *json_arr;
     int32_t size;
     int32_t read_size;
     int32_t offset;
@@ -64,21 +67,52 @@ static void binlog_parse_read(binlog_parser_t *parser)
     return;
 }
 
-void binlog_parser_create(binlog_parser_t *parser, const char *name, const char *output)
+int32_t binlog_read_json(binlog_parser_t *parser, const char *json)
+{
+    int rc = 0;
+    int32_t fd = open(json, O_RDONLY, 0644);
+    if (fd < 0) {
+        fprintf(stderr, "open file faild(%d).", -errno);
+        return -errno;
+    }
+
+    int32_t size = binlog_file_size(json);
+    if (size <= 0) {
+        fprintf(stderr, "open fstat faild.");
+        return -1;
+    }
+
+    char *json_str = (char *)calloc(1, size + 1);
+
+    int rd_size = read(fd, json_str, size);
+
+    if (rd_size < 0) {
+        fprintf(stderr, "read file faild(%d).", -errno);
+        rc = -errno;
+    } else {
+        parser->json_arr = cJSON_Parse(json_str);
+    }
+
+    free(json_str);
+    json_str = NULL;
+    return 0;
+}
+
+int binlog_parser_create(binlog_parser_t *parser, const char *json, const char *name, const char *output)
 {
     char path_name[128];
     int32_t off = snprintf(path_name, sizeof(path_name), "/var/log/tmp/%s", name);
 
     if (off < 0 || off >= sizeof(path_name)) {
         fprintf(stderr, "name too long(%d).", -ENAMETOOLONG);
-        return;
+        return -ENAMETOOLONG;
     }
 
     parser->fd = open(path_name, O_RDONLY, 0644);
 
     if (parser->fd < 0) {
         fprintf(stderr, "open file %s faild(%d).", path_name, -errno);
-        return;
+        return -errno;
     }
 
     char output_path_name[128];
@@ -88,7 +122,12 @@ void binlog_parser_create(binlog_parser_t *parser, const char *name, const char 
     if (parser->out == NULL) {
         close(parser->fd);
         fprintf(stderr, "open  output file %s faild (%d).", output_path_name, -errno);
-        return;
+        return -errno;
+    }
+
+    int rc = binlog_read_json(parser, json);
+    if (rc != 0) {
+        return rc;
     }
 
     parser->buf = malloc(1 << 22);
@@ -99,14 +138,15 @@ void binlog_parser_create(binlog_parser_t *parser, const char *name, const char 
     if (parser->file_size < 0) {
         fclose(parser->out);
         close(parser->fd);
+        cJSON_free(parser->json_arr);
         fprintf(stderr, "file size get faild (%d).", path_name, parser->file_size);
-        return;
+        return -errno;
     }
     parser->file_offset = 0;
 
     binlog_parse_read(parser);
 
-    return;
+    return 0;
 }
 
 void binlog_parser_destroy(binlog_parser_t *bparser)
@@ -115,6 +155,7 @@ void binlog_parser_destroy(binlog_parser_t *bparser)
     if (bparser->buf != NULL) {
         free(bparser->buf);
     }
+    cJSON_free(bparser->json_arr);
     return;
 }
 
@@ -337,9 +378,18 @@ int32_t print_format(char *format, binlog_va_list va_list, FILE *stream)
     return total_printed;
 }
 
-char *foramt_fetch(char *func, int32_t line)
+char *format_fetch(binlog_parser_t *parser, char *func, int32_t line)
 {
-    return "start test1 %s <%d %d %d %u %llu %f %lf>";
+    cJSON *json_arr = parser->json_arr;
+    cJSON *item = NULL;
+    cJSON_ArrayForEach(item, json_arr) {
+        if (strcmp(func, cJSON_GetObjectItem(item, "function")->valuestring) == 0 &&
+            line ==  cJSON_GetObjectItem(item, "line")->valueint) {
+                return cJSON_GetObjectItem(item, "format")->valuestring;
+        }
+    
+    }
+    return NULL;
 }
 
 void binlog_prase(binlog_parser_t *parser)
@@ -407,7 +457,11 @@ void binlog_prase(binlog_parser_t *parser)
         fprintf(parser->out, "%s %s %#p ", time_fmt, binlog_level_name(level), thread);
 
         /* va args */
-        print_format(foramt_fetch(func, line), vlist, parser->out);
+        char *format = format_fetch(parser, func, line);
+        if (format == NULL) {
+            fprintf(stderr, "skip: [%s:%d] format unfound", func, line);
+        }
+        print_format(format, vlist, parser->out);
 
         /* function + line */
         fprintf(parser->out, " [%s:%d]\n", func, line);
@@ -424,8 +478,9 @@ int main(int argc, char **argv)
 {
     char *name = NULL;
     char *output = NULL;
+    char *json = NULL;
     char opt;
-    while ((opt = getopt(argc, argv, "f:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "f:o:j:")) != -1) {
         switch (opt) {
             case 'f': {
                 name = optarg;
@@ -433,14 +488,20 @@ int main(int argc, char **argv)
             case 'o': {
                 output = optarg;
             }
+            case 'j': {
+                json = optarg;
+            }
         }
     }
     if (name == NULL || output == NULL) {
         exit(-1);
     }
-    binlog_parser_t parser;
+    binlog_parser_t parser = {0};
 
-    binlog_parser_create(&parser, name, output);
+    int rc = binlog_parser_create(&parser, json, name, output);
+    if (rc != 0) {
+        return rc;
+    }
     binlog_prase(&parser);
     binlog_parser_destroy(&parser);
 }
