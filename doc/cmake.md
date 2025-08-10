@@ -55,6 +55,12 @@ cmake 编译选项
 
 5.```include_directories([AFTER|BEFORE] [SYSTEM] dir1 [dir2 ...])```
 
+## target
+
+|全局|目标|描述|
+|--|--|--|
+|include_directories(...)|target_include_directories(target PRIVATE/PUBLIC/INTERFACE ...)|包含头文件|
+
 > 将给定目录添加到编译器用来搜索包含文件的目录中。相对路径被解释为相对于当前源目录
 
 ## 参考

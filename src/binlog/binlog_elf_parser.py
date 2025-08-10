@@ -70,8 +70,13 @@ def dump_json(argset):
             sort_keys = True
         )
 
+def usage():
+    print("Usage: binlog_elf_parser.py [..files]\n"
+          "\tbinlog_elf_parser.py a.so b.so c.out ...\n")
+
 if __name__ == '__main__':
-    if len(sys.argv) == 0:
+    if len(sys.argv) < 2:
+        usage()
         sys.exit()
     scan_files = sys.argv[1:]
     argset = parse_binlog(scan_files)

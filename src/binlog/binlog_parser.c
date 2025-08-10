@@ -138,7 +138,7 @@ int binlog_parser_create(binlog_parser_t *parser, const char *json, const char *
     if (parser->file_size < 0) {
         fclose(parser->out);
         close(parser->fd);
-        cJSON_free(parser->json_arr);
+        cJSON_Delete(parser->json_arr);
         fprintf(stderr, "file size get faild (%d).", path_name, parser->file_size);
         return -errno;
     }
@@ -155,7 +155,7 @@ void binlog_parser_destroy(binlog_parser_t *bparser)
     if (bparser->buf != NULL) {
         free(bparser->buf);
     }
-    cJSON_free(bparser->json_arr);
+    cJSON_Delete(bparser->json_arr);
     return;
 }
 
@@ -392,6 +392,17 @@ char *format_fetch(binlog_parser_t *parser, char *func, int32_t line)
     return NULL;
 }
 
+static void timestamp_fmt(time_t ts, char *time_fmt, uint32_t size)
+{
+    time_t sec = ts / (time_t)(1e6);
+    time_t usec = ts % 1000;
+    struct tm utc_time;
+    localtime_r(&sec, &utc_time);
+    strftime(time_fmt, size, "%Y-%m-%d %H:%M:%S", &utc_time);
+    snprintf(time_fmt + strlen(time_fmt), size - strlen(time_fmt), ".%03ld", usec);
+    return;
+}
+
 void binlog_prase(binlog_parser_t *parser)
 {
     struct timespec monotonic_ts;
@@ -445,13 +456,10 @@ void binlog_prase(binlog_parser_t *parser)
             .off = offset
         };
 
+        /* time format */
         time_t real_us = ts + diff;
-        time_t real_sec = real_us / (time_t)(1e6);
-        struct tm utc_time;
-        localtime_r(&real_sec, &utc_time);
         char time_fmt[128];
-        strftime(time_fmt, sizeof(time_fmt), "%Y-%m-%d %H:%M:%S", &utc_time);
-        snprintf(time_fmt + strlen(time_fmt), sizeof(time_fmt) - strlen(time_fmt), ".%03ld", real_us % 1000);
+        timestamp_fmt(real_us, time_fmt, 128);
 
         /* prefix */
         fprintf(parser->out, "%s %s %#p ", time_fmt, binlog_level_name(level), thread);
@@ -474,26 +482,46 @@ void binlog_prase(binlog_parser_t *parser)
     return;
 }
 
+static void usage(void)
+{
+    fprintf(stdout, "Usage: binlog_parser -f [BINLOG_FILE] -o [OUTPUT] -j [FORMAT_JSON]\n"
+                    "\t -f enter a binary file name\n"
+                    "\t -o output the filename after parsing\n"
+                    "\t -j formatting json file\n\n");
+    return;
+}
+
+
 int main(int argc, char **argv)
 {
     char *name = NULL;
     char *output = NULL;
     char *json = NULL;
     char opt;
-    while ((opt = getopt(argc, argv, "f:o:j:")) != -1) {
+    while ((opt = getopt(argc, argv, "f:o:j:h")) != -1) {
         switch (opt) {
             case 'f': {
                 name = optarg;
+                break;
             }
             case 'o': {
                 output = optarg;
+                break;
             }
             case 'j': {
                 json = optarg;
+                break;
+            }
+            case 'h':
+            default: {
+                usage();
+                exit(-1);
+                break;
             }
         }
     }
-    if (name == NULL || output == NULL) {
+    if (name == NULL || output == NULL || json == NULL) {
+        usage();
         exit(-1);
     }
     binlog_parser_t parser = {0};
