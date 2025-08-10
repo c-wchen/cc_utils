@@ -1,7 +1,18 @@
-命令需求拆分
+# 命令需求拆分
 SR001: 支持多进程
 SR002：支持多模块
 SR003: 支持子命令格式
 SR004: 命令超时退出
 SR005: 支持优雅退出
 SR006: 带提示词
+
+
+# 命令格式
+
+```wcmdc <proc_name> help```
+
+```wcmdc <proc_name> test```
+
+```wcmdc <proc_name> <sub_command> [OPTIONS]```
+
+```wcmdc <proc_name> <sub_command> -h```
