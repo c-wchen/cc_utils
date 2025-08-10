@@ -5,7 +5,7 @@ set(SRC_LIST
 )
 add_library(${PROJECT_NAME} SHARED ${SRC_LIST})
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/cJSON cJSON_binary_dir)
+add_subdirectory(${TOP_PROJECT_DIR}/third_party/cJSON cJSON_binary_dir)
 
 
 add_executable(binlog_example binlog_example.c)
@@ -23,4 +23,4 @@ endif()
 
 target_link_libraries(binlog_example PRIVATE pthread ${PROJECT_NAME})
 target_link_libraries(binlog_parser PRIVATE cjson)
-target_include_directories(binlog_parser PRIVATE ${CMAKE_SOURCE_DIR}/third_party/cJSON)
+target_include_directories(binlog_parser PRIVATE ${TOP_PROJECT_DIR}/third_party/cJSON)

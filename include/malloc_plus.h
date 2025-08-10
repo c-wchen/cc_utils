@@ -4,8 +4,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void *malloc_plus(int size, const char *func, uint32_t lineNum);
-void free_plus(void **ptr, const char *func, uint32_t lineNum);
+void *malloc_plus(int size, const char *func, uint32_t line_num);
+void free_plus(void **ptr, const char *func, uint32_t line_num);
 #define MALLOC_PLUS(size) malloc_plus(size, __FUNCTION__, __LINE__)
 #define FREE_PLUS(ptr) free_plus((void **)&(ptr), __FUNCTION__, __LINE__)
 #ifdef __cplusplus

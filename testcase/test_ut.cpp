@@ -14,7 +14,7 @@
 // ---------------------------ut hash-------------------------------------- //
 typedef struct {
     int64_t id;
-    char *data;
+    char const *data;
     UT_hash_handle hh;
 } user;
 
@@ -97,7 +97,7 @@ TEST(TEST_UT, test_ut_hash)
 // ---------------------------ut list-------------------------------------- //
 typedef struct student {
     uint64_t user_id;
-    char *user_name;
+    char const *user_name;
     struct student *prev; /* needed for a doubly-linked list only */
     struct student *next; /* needed for singly- or doubly-linked lists */
 } student;

@@ -4,19 +4,19 @@ set(CMAKE_VERBOSE_MAKEFILEON ON)
 
 option(ENABLE_ASAN "ENABLE_ASAN: " ON)
 option(ENABLE_COVERAGE "ENABLE_COVERAGE: " ON)
-option(ENABLE_DEBUG "ENABLE_COVERAGE: " ON)
+option(ENABLE_DEBUG "ENABLE_DEBUG: " ON)
 option(ENABLE_RECOMPILE "ENABLE_GTEST_MOCKCPP_COMPILE: " ON)
 
 # asan
-set(CMAKE_CXX_FLAGS "-g -std=c++11 -fno-omit-frame-pointer -fpermissive")
+set(CMAKE_CXX_FLAGS "-std=c++11 -fno-omit-frame-pointer -fpermissive")
 if (ENABLE_ASAN)
-	add_definitions("-fsanitize=address")
+	add_compile_options(-fsanitize=address)
+    link_libraries(asan)
 endif()
-#lcov
-if (ENABLE_COVERAGE)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
-endif ()
+
+if (ENABLE_DEBUG)
+    add_compile_options(-g -O0)
+endif()
 
 # link_directories(${CMAKE_SOURCE_DIR}/lib)
 
@@ -57,5 +57,9 @@ endif()
 
 add_subdirectory(${TOP_DIR} wsrc_${BIN_DIRECTORY_DIR})
 
-target_link_libraries(${PROJECT_NAME} wsrc_static gtest mockcpp pthread asan dl)
-target_compile_options(${PROJECT_NAME} PRIVATE -g -O1)
+target_link_libraries(${PROJECT_NAME} PRIVATE wsrc_static gtest mockcpp pthread dl)
+
+if (ENABLE_COVERAGE)
+    target_compile_options(${PROJECT_NAME} PRIVATE -fprofile-arcs -ftest-coverage)
+    target_link_libraries(${PROJECT_NAME} PRIVATE gcov)
+endif()

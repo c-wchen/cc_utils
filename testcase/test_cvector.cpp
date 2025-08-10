@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 extern "C" {
-    #include "cvector.h"
+#include "cvector.h"
 }
 
 TEST(TEST_CVECTOR, test_cvector)
@@ -14,7 +14,7 @@ TEST(TEST_CVECTOR, test_cvector)
     EXPECT_EQ(cvector_size(vec), 100);
     EXPECT_EQ(*cvector_at(vec, 50), 50);
     EXPECT_EQ(*cvector_at(vec, 99), 99);
-    
+
     cvector_free(vec);
 
 }

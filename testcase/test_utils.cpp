@@ -13,12 +13,13 @@ TEST(TEST_UTILS, test_str_to_int)
 
 typedef struct {
     double val; // float存在精度损失
-    char *input;
+    char const *input;
     int preserve;
-} FloatToStrStu;
+} float2str_stu_t;
+
 TEST(TEST_UTILS, test_float_to_str)
 {
-    FloatToStrStu ts[] = {
+    float2str_stu_t ts[] = {
         {365.40600412823,    "365.406",   3},
         {131.0673001659629,  "131.067",   3},
         {7.6627825411210555, "7.7",       1},
@@ -50,7 +51,7 @@ TEST(TEST_UTILS, test_float_to_str)
         {2.7101398544323176, "2.7",       1},
         {20.63854912791382,  "20.64",     2},
     };
-    int len = sizeof(ts) / sizeof(FloatToStrStu);
+    int len = sizeof(ts) / sizeof(float2str_stu_t);
     char output[100] = {0};
     for (int i = 0; i < len; ++i) {
         memset(output, 0, 100);

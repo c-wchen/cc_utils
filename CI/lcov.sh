@@ -29,11 +29,18 @@ function gen_lcov_report() {
     genhtml -o build/lcov result.info
 }
 
+function http_server() {
+    cd build/lcov
+    python -m http.server 8080
+}
+
 function main() {
     ## 安装lcov
     install_lcov
 
     gen_lcov_report
+
+    http_server
 }
 
 main

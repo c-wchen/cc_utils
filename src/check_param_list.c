@@ -9,20 +9,20 @@
 
 #define MAX_BUF_SIZE 256
 
-bool CheckParamFromAddr(const char *func, uint32_t lineNum, int32_t num, ...)
+bool check_addr_valid(const char *func, uint32_t line_num, int32_t num, ...)
 {
     va_list valist;
     va_start(valist, num);
     char buf[MAX_BUF_SIZE] = {'\0'};
     int32_t offset = 0;
-    offset += snprintf(buf + offset, MAX_BUF_SIZE - offset, "Check Param[%s:%d] ", func, lineNum);
+    offset += snprintf(buf + offset, MAX_BUF_SIZE - offset, "Check Param[%s:%d] ", func, line_num);
     for (int i = 0; i < num; ++i) {
         uint64_t addr = va_arg(valist, uint64_t);
         if (addr == 0) {
             if (i == 0) {
-                offset += snprintf(buf + offset, MAX_BUF_SIZE - offset, "param%d is INVALID", i);
+                offset += snprintf(buf + offset, MAX_BUF_SIZE - offset, "param%d is invalid", i);
             } else {
-                offset += snprintf(buf + offset, MAX_BUF_SIZE - offset, ", param%d is INVALID", i);
+                offset += snprintf(buf + offset, MAX_BUF_SIZE - offset, ", param%d is invalid", i);
             }
         }
     }

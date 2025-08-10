@@ -12,7 +12,6 @@
 #include <pthread.h>
 #include <sys/stat.h>
 
-
 #include "cJSON.h"
 #include "binlog/binlog.h"
 #include "binlog_internal.h"
@@ -35,7 +34,6 @@ typedef struct {
     int32_t off;
     void *buf;
 } binlog_va_list;
-
 
 static int32_t binlog_file_size(const char *filename)
 {
@@ -264,7 +262,6 @@ static inline char *get_string(binlog_va_list *vlist)
         }                                                 \
     } while (0)
 
-
 int32_t print_format(char *format, binlog_va_list va_list, FILE *stream)
 {
     const char *ptr = format;
@@ -385,9 +382,9 @@ char *format_fetch(binlog_parser_t *parser, char *func, int32_t line)
     cJSON_ArrayForEach(item, json_arr) {
         if (strcmp(func, cJSON_GetObjectItem(item, "function")->valuestring) == 0 &&
             line ==  cJSON_GetObjectItem(item, "line")->valueint) {
-                return cJSON_GetObjectItem(item, "format")->valuestring;
+            return cJSON_GetObjectItem(item, "format")->valuestring;
         }
-    
+
     }
     return NULL;
 }
@@ -424,7 +421,7 @@ void binlog_prase(binlog_parser_t *parser)
         /* length */
         int len = *(int32_t *)(buffer + offset);
         offset += sizeof(int32_t);
-    
+
         if (len + parser->offset > parser->read_size) {
             binlog_parse_read(parser);
         }
@@ -433,7 +430,7 @@ void binlog_prase(binlog_parser_t *parser)
         /* level */
         uint8_t level =  *(uint8_t *)(buffer + offset);
         offset += sizeof(uint8_t);
-    
+
         /* function */
         char *func = (char *)(buffer + offset);
         offset += strlen(func) + 1;
@@ -485,12 +482,11 @@ void binlog_prase(binlog_parser_t *parser)
 static void usage(void)
 {
     fprintf(stdout, "Usage: binlog_parser -f [BINLOG_FILE] -o [OUTPUT] -j [FORMAT_JSON]\n"
-                    "\t -f enter a binary file name\n"
-                    "\t -o output the filename after parsing\n"
-                    "\t -j formatting json file\n\n");
+            "\t -f enter a binary file name\n"
+            "\t -o output the filename after parsing\n"
+            "\t -j formatting json file\n\n");
     return;
 }
-
 
 int main(int argc, char **argv)
 {

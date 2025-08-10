@@ -7,10 +7,10 @@ extern "C" {
 typedef struct {
     int32_t length;
     int32_t data[0];
-} FlexArray;
+} flex_array_t;
 void *create_point_array(int size);
-void set_point_value(void *rowPtr, uint32_t index, void *value);
-void *get_point_value(void *rowPtr, uint32_t index);
+void set_point_value(void *row_ptr, uint32_t index, void *value);
+void *get_point_value(void *row_ptr, uint32_t index);
 void free_point_array(void *ptr, int size);
 #ifdef __cplusplus
 }

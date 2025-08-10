@@ -1,38 +1,31 @@
 //
 // Created by 忘尘 on 2022/10/12.
 //
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define BIT_SUCCESS 1
-#define BIT_FAIL -1
+#include "bitmap.h"
 
-#define DIVIDE_UP(val, x) ((val + x - 1) / x)
+#define ROUND_UP(val, x) ((val + x - 1) / x * x)
 
-typedef struct {
-    uint8_t *data;
-    int32_t len;
-} Bits;
-
-Bits *BitAlloc(int32_t len)
+bitmap *bitmap_alloc(int32_t len)
 {
-    Bits *bits = (Bits *) malloc(sizeof(Bits));
+    bitmap *bits = (bitmap *) malloc(sizeof(bitmap));
     if (bits == NULL) {
         return NULL;
     }
-    bits->data = (uint8_t *) malloc(DIVIDE_UP(len, 8));
+    bits->data = (uint8_t *) malloc(ROUND_UP(len, 8) / 8);
     if (bits->data == NULL) {
         free(bits);
         return NULL;
     }
     bits->len = len;
-    memset(bits->data, 0, DIVIDE_UP(len, 8));
+    memset(bits->data, 0, ROUND_UP(len, 8) / 8);
     return bits;
 }
 
-void BitFree(Bits *bits)
+void bitmap_free(bitmap *bits)
 {
     if (bits != NULL) {
         if (bits->data) {
@@ -49,7 +42,7 @@ void BitFree(Bits *bits)
  * @param value : 0 | 1
  * @return
  */
-int32_t BitSet(Bits *bits, int32_t offset, uint8_t value)
+int32_t bitmap_set(bitmap *bits, int32_t offset, uint8_t value)
 {
     if (value != 0 && value != 1) {
         return BIT_FAIL;
@@ -65,7 +58,7 @@ int32_t BitSet(Bits *bits, int32_t offset, uint8_t value)
     return BIT_SUCCESS;
 }
 
-int32_t BitGet(Bits *bits, int32_t offset)
+int32_t bitmap_get(bitmap *bits, int32_t offset)
 {
     if (offset >= bits->len) {
         return BIT_FAIL;
@@ -73,27 +66,19 @@ int32_t BitGet(Bits *bits, int32_t offset)
     return (uint32_t)((bits->data[offset / 8] & (0x01 << (offset % 8))) > 0) ? 1 : 0;
 }
 
-int32_t BitPrint(Bits *bits)
+int32_t bitmap_print(bitmap *bits)
 {
     int32_t i;
-#define MAX_SEP_LEN 16
+#define STR_MAX 64
+    char str[STR_MAX + 1] = {0};
     for (i = 0; i < bits->len; i++) {
-        printf("%u", BitGet(bits, i));
-        if (i % MAX_SEP_LEN) {
-            printf("\n");
+        if (i > 0 && i % STR_MAX == 0) {
+            printf("%s\n", str);
+        } else if (i + 1 == bits->len) {
+            str[(i + 1) % STR_MAX] = '\0';
+            printf("%s\n", str);
         }
+        str[i % STR_MAX] = bitmap_get(bits, i) ? '1' : '0';
     }
     printf("\n");
 }
-
-//int main(void) {
-//    Bits *bits = BitAlloc(200);
-//    BitSet(bits, 14, 1);
-//    BitSet(bits, 1, 1);
-//    BitSet(bits, 1, 0);
-//    BitSet(bits, 2, 1);
-//    BitPrint(bits);
-//    BitFree(bits);
-//    bits = NULL;
-//    return 0;
-//}

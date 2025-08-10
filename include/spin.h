@@ -12,7 +12,6 @@ typedef struct spinlock {
 
 #define SPINLOCK_STATIC_INITIALIZER()  {0}
 
-
 static inline void spinlock_acquire(spinlock *p_lock)
 {
     while (atomic_flag_test_and_set_explicit(&p_lock->val, memory_order_acquire)) {
@@ -31,7 +30,6 @@ static inline void spinlock_release(spinlock *p_lock)
 {
     atomic_flag_clear_explicit(&p_lock->val, memory_order_release);
 }
-
 
 #ifdef __cplusplus
 }

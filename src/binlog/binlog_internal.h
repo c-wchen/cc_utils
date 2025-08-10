@@ -23,8 +23,8 @@ typedef enum {
 typedef int     TYPE_BLOG_INT;
 typedef long    TYPE_BLOG_LONG;
 typedef double  TYPE_BLOG_DOUBLE;
-typedef char *  TYPE_BLOG_STRING;
-typedef void *  TYPE_BLOG_POINTER;
+typedef char   *TYPE_BLOG_STRING;
+typedef void   *TYPE_BLOG_POINTER;
 
 typedef struct {
     void *buf;
@@ -38,7 +38,6 @@ typedef struct {
     int32_t fd;
     char name[128];
 } binlog_handle_t;
-
 
 #define ISDIGIT(x) ({__typeof(x) __is_x = (x); __is_x >= '0' && __is_x <= '9'; })
 

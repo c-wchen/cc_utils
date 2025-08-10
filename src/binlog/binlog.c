@@ -295,7 +295,7 @@ void binlog_print(void *handle, int32_t level, const char *func, int32_t line, c
     time_t now = ts.tv_sec * (time_t)(1e6) + ts.tv_nsec / (time_t)(1e3);
 
     const int32_t size = sizeof(int32_t) /* length */ + 1 /* level */ + strlen(func) + 1 /* func */  +
-                  sizeof(line) /* line */ + sizeof(pthread_t) /* thread */ + sizeof(time_t) /* time */;
+                         sizeof(line) /* line */ + sizeof(pthread_t) /* thread */ + sizeof(time_t) /* time */;
 
     uint8_t prefix[size];
     size_t offset = 0;
