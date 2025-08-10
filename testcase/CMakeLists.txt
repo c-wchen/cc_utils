@@ -37,6 +37,7 @@ set(BIN_DIRECTORY_DIR binary_dir)
 
 ## 第三方头文件
 include_directories(${THIRD_PARTY_PATH}/cvector)
+include_directories(${THIRD_PARTY_PATH}/cJSON)
 include_directories(${THIRD_PARTY_PATH}/uthash/src)
 include_directories(${THIRD_PARTY_PATH}/googletest/googletest/include)
 include_directories(${THIRD_PARTY_PATH}/mockcpp/3rdparty)
@@ -57,7 +58,7 @@ endif()
 
 add_subdirectory(${TOP_DIR} wsrc_${BIN_DIRECTORY_DIR})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE wsrc_static gtest mockcpp pthread dl)
+target_link_libraries(${PROJECT_NAME} PRIVATE wsrc_static gtest mockcpp pthread dl cjson)
 
 if (ENABLE_COVERAGE)
     target_compile_options(${PROJECT_NAME} PRIVATE -fprofile-arcs -ftest-coverage)

@@ -5,9 +5,6 @@ set(SRC_LIST
 )
 add_library(${PROJECT_NAME} SHARED ${SRC_LIST})
 
-add_subdirectory(${TOP_PROJECT_DIR}/third_party/cJSON cJSON_binary_dir)
-
-
 add_executable(binlog_example binlog_example.c)
 add_executable(binlog_parser binlog_parser.c)
 
@@ -23,4 +20,3 @@ endif()
 
 target_link_libraries(binlog_example PRIVATE pthread ${PROJECT_NAME})
 target_link_libraries(binlog_parser PRIVATE cjson)
-target_include_directories(binlog_parser PRIVATE ${TOP_PROJECT_DIR}/third_party/cJSON)

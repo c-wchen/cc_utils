@@ -1,8 +1,9 @@
+#include <limits.h>
 #include "gtest/gtest.h"
 #include "num_convert.h"
 #include "malloc_plus.h"
 #include "check_param.h"
-#include <limits.h>
+#include "json_helper.h"
 
 TEST(TEST_UTILS, test_str_to_int)
 {
@@ -76,4 +77,36 @@ TEST(TEST_UTILS, test_chec_param)
     uint64_t b = 90;
     uint64_t c = 0;
     EXPECT_EQ(CHECK_ADDR(PARAM_THREE, a, b, c), true);
+}
+
+typedef struct {
+    char format[1024];
+    char function[32];
+    uint32_t line;
+    float ratio;
+} func_format_t;
+
+TEST(TEST_UTILS, test_json_helper)
+{
+    char const *jsonstr = "{\"format\": \"start test\",\"function\": \"binlog_test\",\"line\": 19, \"ratio\":9.32}";
+    cJSON *obj = cJSON_Parse(jsonstr);
+    json2struct_t jstruct_arr[] = {
+        CH_STRING("format", func_format_t, format, true, 1024),
+        CH_STRING("function", func_format_t, function, true, 32),
+        CH_INT("line", func_format_t, line, true),
+        CH_FLOAT("ratio", func_format_t, ratio, true),
+    };
+
+    func_format_t ff = {0};
+    int rc = json_object_helper(&ff, obj, jstruct_arr, array_size(jstruct_arr));
+    EXPECT_EQ(rc, 0);
+
+    EXPECT_STREQ(ff.function, "binlog_test");
+    EXPECT_STREQ(ff.format, "start test");
+    EXPECT_EQ(ff.line, 19);
+    EXPECT_FLOAT_EQ(ff.ratio, 9.32);
+    EXPECT_EQ(jstruct_arr[2].length, 4);
+    EXPECT_EQ(jstruct_arr[0].length, 1024);
+
+    cJSON_Delete(obj);
 }
