@@ -13,6 +13,7 @@ extern "C" {
 #define CH_TYPE_FLOAT   2
 /* #define CH_TYPE_DOUBLE */
 #define CH_TYPE_STRING  3
+/* #define CH_TYPE_ARRAY */
 
 typedef struct {
     const char *name;

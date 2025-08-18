@@ -129,3 +129,6 @@ MOCKER(DFUNC(func))
 ## 参考
 
 [MockCpp手册（中文）_Tony_Wong的博客-CSDN博客_mockcpp](https://blog.csdn.net/Tony_Wong/article/details/38752355)
+
+
+[cmockery： 基于C语言的mock工具](https://github.com/google/cmockery)
